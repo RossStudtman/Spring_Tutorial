@@ -1,0 +1,393 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for videos 19 through 23
+
+
+Video #19: Auto Wiring in Spring - by type
+Video #20: Auto Wiring in Spring - by name
+Video #21: Auto Wiring in Spring - by constructor
+Video #22: Auto Wiring in Spring - default
+Video #23: Auto Wiring in Spring - remove ambiguities
+
+
+Video 19 code: Spring_tut_7
+Video 20 - 23: only code in notes, not program.
+
+
+VIDEO #19: Auto Wiring in Spring
+
+
+	John, "Autowiring lets Spring try to figure out how all your beans are connected. So it
+	tries to figure out the dependencies between beans and wire them up automatically."
+	
+	We previously learned about injecting one bean into another:
+	
+		BeanA has-a BeanB property.
+		
+		But what if BeanB has-a BeanC property in it?
+		
+			...this is a "chain of dependencies."
+			
+			A has a B in it; and B has a C in it; C has a D in it; D has an E in it; etc.
+			
+	
+	--> Spring will "instantiate" the classes in the right order to fulfill the dependencies.
+	
+	We have learned 3 ways to inject one bean into another:
+	
+		1. Use a <property> and a nested inner <bean> tag.
+		2. Use a <property> and a "ref:" attribute to the nested bean.
+		3. Use a <constructor-arg> and a "ref:" attribute to the nested bean. 
+		
+	Another possibility to accomplish the injection is to use Spring Autowiring.
+	
+		There are several techniques of autowiring we will learn about. The first is auto
+		wiring by type.
+		
+			You can autowire by type if the nested dependencies (probably redundant to say
+			"nested	dependencies") are of different types and you have beans of those types
+			available to you, so you can inject them.
+			
+			If you look at the "Master Bean" and can see that it requires two dependent beans
+			and	you can see the type of those beans (how *wouldn't* we be able to see the 
+			type? I assume that scenario will be presented later), you can "autowire by type".
+			
+			
+			
+	OKAY. Lets set this project up.
+	
+		1. Create new Maven project. - checkbox: Create simple project.
+			- Group ID: spring_tutorial_7
+			- Artifact ID: Spring_tut_7
+			
+			One thing to note: I'm having to create the folder for this in my Windows
+			Eclipse	projects folder, then select that folder during this step. Eclipse
+			is having an issue where while creating a new Maven project it will only
+			populate the "use default location" with previous projects.
+			
+		2. Add Maven dependencies: spring-core, spring-beans, spring-context.		
+			- pom.xml --> "Dependencies" --> "springframework" --> add .jar files.				
+		
+		3. Create packages in src/main/java: vid_19 & vid_19_beans.
+		
+		Note: the following steps are conceptually written. To make Eclipse
+		happy start at step 8; then 6 & 7; then 5; and lastly 4.
+		
+		4. Create Vid_19_Main class --> add to vid_19 package.
+		
+			ApplicationContext context = 
+				new ClassPathXmlApplicationContext("vid_19_beans.vid_19_beans.xml");
+		
+			Vid_19_Logger logger = (Vid_19_Logger)context.getBean("logger");
+			
+			logger.writeConsole("writeConsole says hello!");
+			logger.writeFile("writeFile says hello!");
+			
+			((ClassPathXmlApplicationContext)context).close();		
+		
+			
+		5. Create Vid_19_Logger class --> add to vid_19 package.
+		
+			Vid_19_Logger
+			--------------
+			-consoleWriter: ConsoleWriter						// dependency
+			-fileWriter: FileWriter								// dependency
+			+setConsoleWriter(writer: ConsoleWriter): void
+			+setFileWriter(fileWriter: FileWriter): void
+			+writeFile(text: String): void		// fileWriter.write(text)
+			+writeConsole(text: String): void	// consoleWriter.write(text)
+			
+		6. Create Vid_19_ConsoleWriter class --> add to vid_19 package.
+		
+			Vid_19_ConsoleWriter implements LogWriter
+			--------------------
+			+write(text: String): void			// sysout("cw write to console: " +text);		
+
+		7. Create Vid_19_FileWriter class --> add to vid_19 package.
+		
+			Vid_19_FileWriter implements LogWriter
+			------------------
+			+write(text: String): void			// sysout("fw pretend wrote to file: " +text);
+
+		8. Create Vid_19_LogWriter <<interface>>
+		
+			Vid_19_LogWriter <<interface>>
+			-----------------------------
+			+write(text: String): void			
+		
+		9. Create vid_19_beans.xml: Spring Bean Configuration File 
+			--> add to vid_19_beans package.	
+			
+		10. Create beans in vid_19_beans.xml:		
+	
+			<bean id="logger" class="vid_19.Vid_19_Logger"></bean>
+			<bean id="consoleWriter" class="vid_19.Vid_19_ConsoleWriter"></bean>
+			<bean id="fileWriter" class="vid_19.Vid_19_FileWriter"></bean>	
+	
+	
+	RUN PROGRAM. Error! NullPointerException. This is good because by doing this:
+	
+		logger.writeConsole("writeConsole says hello!");
+		
+	...I am taking for granted that Vid_19_Logger has the aggregate class
+	Vid_19_ConsoleWriter already instantiated as a member ("property" or "field", I
+	should just say "property" but for now all of these terms mean the same thing
+	to me) -- except that it hasn't been yet because we've not done that.
+	
+	
+		By the way, here's a good resource on the following terms: aggregate, composition,
+		dependency, inheritence and realization:
+		
+		http://usna86-techbits.blogspot.com/2012/11/uml-class-diagram-relationships.html
+		
+			My take away: injections are aggregation, not composition. Composition requires
+			that the class manage the lifecycle of its nested member.
+	
+	
+	So, now to continue with John's tutorial at the 3:42 mark.
+	
+	[ ] vid_19_beans.xml
+	
+		Click logger bean, set "autowire:" --> byType.
+		
+		Save.
+		
+	RUN PROGRAM. It works!
+	
+		What this demonstrates is that Spring has instantiated the Vid_19_ConsoleWriter
+		and Vid_19_FileWriter objects inside Vid_19_Logger for us.
+		
+	
+	Now, you who read this are probably OOP wizards but I am not (yet). So I want to take
+	a moment to clearly explain to myself what this program is doing.
+	
+		Main --> creates a Logger object.
+		
+		Logger --> has two aggregate classes: FileWriter & ConsoleWriter
+		
+		ConsoleWriter & FileWriter--> implement LogWriter interface
+			--> guarantees they have the write() method.
+			
+		Logger has writeConsole() & writeFile() methods --> these invoke the write() method
+			of the ConsoleWriter & FileWriter classes, which is guaranteed to be there
+			because of the LogWriter interface.
+			
+	...when it is written out like that it is crazy simple to understand. Sometimes when
+	it is splayed across 6 tabs in Eclipse it can get cobbled. 
+	
+	
+	John talks about potential pitfalls of autowiring:
+		
+		- in a large project if a lot of autowiring is going on it may be hard to 
+		  understand what is going on.
+		  
+		- There can be no ambiguity. 
+		
+			With the project we just did there was no ambiguity. We had two properties
+			we wanted to set and we had two beans whose classes matched the properties 
+			we wanted to set. 
+			
+			But remember how in our Jungle bean, that the XML had several Animal beans
+			in it? That would create ambiguity, Spring wouldn't know which Animal 
+			bean to autowire. 
+			
+			Spring will only autowire stuff if it is absolutely clear what should be
+			wired and where. Said another way, don't have two beans with the same
+			class when autowiring.
+			
+			Another source of potential ambiguity:
+			
+				If you use the interface type for a property and the XML has two
+				beans, both of which implement the interface, Spring can't know
+				which bean to send to the set() method because both beans (in
+				our example) extend the interface...Spring doesn't know which bean
+				to send so it throws an error.
+				
+	
+			
+VIDEO #20: Autowiring by name
+
+	
+	The idea: instead of having Spring look to injection via the TYPE of the bean
+	instead ask it to look at the ID of the bean. For this to work the ID of the
+	bean has to be the same as the property name. When this is done then Spring
+	knows that the Logger object has two properties, and hey, there are two beans
+	here with the same IDs as those property names, lets use those.
+	
+	Not writing actual code for this lesson.
+	
+	But here's what you'd do:
+	
+	[ ] vid_19_beans.xml
+	
+		change:
+		
+		<!-- Vid 19 -->
+		<bean id="logger" class="vid_19.Vid_19_Logger" autowire="byType"></bean>
+		
+		<bean id="consoleWriter" class="vid_19.Vid_19_ConsoleWriter"></bean>
+		<bean id="fileWriter" class="vid_19.Vid_19_FileWriter"></bean>		
+		
+		to:
+		
+		<!-- Vid 20 -->
+		<bean id="logger" class="vid_19.Vid_19_Logger" autowire="byName"></bean>
+		
+		<bean id="consoleWriter" class="vid_19.Vid_19_ConsoleWriter"></bean>
+		<bean id="fileWriter" class="vid_19.Vid_19_FileWriter"></bean>		
+		
+		
+		...and this would work because the IDs have the same name as the properties.
+		
+		
+		Note: works the same if the <beans> are given "name:" attributes instead
+		of IDs.
+		
+		
+VIDEO #21: Autowiring by constructor
+
+
+	Only writing notes for this video.
+	
+	[ ] Vid_19_Logger
+	
+		Give this class a constructor. 
+		
+		Autowiring by constructor works by type.
+		
+		So the constructor needs to have arguments of the bean's class type, not a 
+		supertype or interface type.
+		
+		public Vid_19_Logger(ConsoleWriter cw, FileWriter fw){
+			this.consoleWriter = cw;
+			this.fileWriter = fw;
+		}
+		
+	[ ] vid_19_beans.xml
+	
+		Click logger bean, set "autowire": --> constructor.
+		
+	RUN PROGRAM. It works! ...it does on the video, anyway ;)
+	
+	
+		
+
+VIDEO #22: Default Autowiring
+
+	[ ] Vid_19_Logger
+	
+		The constructor from video 21 (which I didn't code) was removed. 
+		
+
+	We can set a default autowiring on the entire vid_19_beans.xml.
+	
+	Here's the scenario: you have several beans in the XML file. And you want to set a
+	default for the entire XML.
+	
+	[ ] vid_19_beans.xml
+	
+		Select file root <beans>, in R-pane there's "default-autowire:" with choices:
+		
+			Choices: default; no; byName; byType; constructor.
+			
+		
+		Select "byName".
+		
+	RUN PROGRAM. It works.
+	
+		Why? Spring looks to instantiate aggregated classes using <bean> IDs (or names). It
+		is as simple as matching an ID with an aggregate class' properties of the same
+		name as the <bean>. 
+		
+			Note: like CSS hierarchy, anything done in the <bean> could potentially override
+			what is specified in the <beans> tag attributes. That is, the <bean> is more
+			specific than the <beans> tag.
+			
+	
+	Next, alter Vid_19_Logger so that the properties are once again specific types rather
+	than the Vid_19_LogWriter interface type. 
+	
+	After doing that, you can specify that the "default-autowire:" --> byType.
+		
+		- however, because Spring is looking for types you cannot have two <bean> elements
+		with the same type b/c Spring won't know which one to use and it'll throw an error.
+		
+			- of course, in this scenario you could change the "default-autowire" back to
+			byName and Spring wouldn't care how many <bean> elements there were as long
+			as there were <bean> elements with IDs (or names) that match property names
+			of the bean class it is trying to instantiate.
+			
+			There's another way, though:
+			
+				"default-autowire-candidates:" textbox --> takes a comma separated 
+				list of beans to be considered for autowiring into other beans.
+				
+					Tiny note: don't put spaces into the xml. Do like:
+					
+					<beans xmlns="..."
+						xmlns:xsi="..."
+						xsi:schemaLocation="..."
+						default-autowire="byType"
+						default-autowire-candidates="consoleWriter,fileWriter>
+						
+						<bean id="logger"...>...
+						<bean id="fileWriter" ...>...
+						<bean id="consoleWriter" ...>...
+						<bean id="anotherConsoleWriter"...>...
+					</beans>
+					
+				...the potential ambiguity of having two ConsoleWriter beans is alleviated
+				because the "default-autowire-candidates:" specifies which beans can be
+				considered for autowiring.
+				
+				
+				You can also do:
+				
+					default-autowire-candidates="*Writer"
+					
+					...which says "any <bean> that has an ID that ends in "Writer" can be
+					used for autowiring purposes.
+					
+					
+					
+VIDEO #23: Techniques to Eliminate Ambiguity when Autowiring
+
+
+	The set up:
+	
+		Spring Bean Configuration File XML - default-autowire --> byType.
+		
+		Two <bean> elements with different IDs but the same class.
+		
+		Ways to deal with this ambiguity:
+		
+			- use byName.
+			- use default-autowire-candidates
+			- and by what John shows in this video...
+			
+			
+			...select one of the "ambiguous" <bean> elements:
+			
+				"autowire-candidate:" --> set to "false".
+				
+				...now it's not a candidate for autowiring.use 
+				
+	RUN PROGRAM. Works.
+	
+	What we can also do:
+	
+		Select one of the "ambiguous" <bean> elements:
+		
+			"primary:" --> set to "true"
+			
+	RUN PROGRAM. Works.
+	
+		Note: Using "primary=true" does not exclude other <bean> elements with the same
+		class from partaking in other autowiring scenarios (like with being injected into
+		a completely different bean). However, "autowire-candidate=false" will remove
+		that <bean> element from all autowiring.
+		
+		
+THE END.

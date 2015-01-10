@@ -1,0 +1,1046 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for video 50 through 64
+
+John's assumption: that you know a bit about servlets and JSPs. And if you don't, he has a good
+web course for that (and I've made some notes over that tutorial series as well).
+
+
+Video #50: A Basic Non-Spring Web App
+Video #51: Bringing in Maven
+Video #52: The Dispatcher Servlet
+Video #53: Adding a Controller
+Video #54: View Resolvers
+Video #55: Adding Data to the Session
+Video #56: Using Spring Data Models
+Video #57: Using JSTL - JSP Standard Tag Library
+Video #58: Configuring a JNDI Data Source
+Video #59: Bringing in DAO Code
+Video #60: Loading Bean Containers with ContextLoaderListener
+Video #61: Creating a Datasource Bean
+Video #62: Adding a Service Layer
+Video #63: Adding a New Controller
+Video #64: Getting URL Parameters
+
+Above code in Spring_tut_14
+
+
+
+VIDEO #50: Basic Web App
+
+	File : New : Other : Web : Dynamic Web Project
+	
+	Project name: Spring_tut_14
+	Target Runtime: Apache Tomcat v7.0
+	Dynamic web module version: 2.5 (compatible with Tomcat 6)
+	Generate web.xml deployment descriptor? Yes, check that checkbox.
+	
+	Click FINISH.
+	
+	[ ] dangerRabbit.jsp
+	
+		Make this by R-click WebContent : New JSP file.
+		
+		Type in "That rabbit's got a vicious streak a mile wide!"
+		between the <body> tags.
+		
+		Save.
+		
+	RUN PROGRAM: Green run button, select server, choose to "Always run this server...".
+	
+		...and there you have it, the rabbit quote is displayed.
+		
+		
+	
+VIDEO #51: Bringing in Maven
+
+	Goal: We need the Spring jars.
+	
+	R-click project : Configure : Convert to Maven Project
+	
+		Group Id (package name): vid_51
+		Artifact Id (would be the project name in previous tutorials but we've already got
+		a project name): vid_51_aId
+		
+	[ ] pom.xml
+	
+		org.springframework --> spring-core; spring-context; spring-beans; spring-jdbc;
+								spring-web; spring-webmvc;
+								
+								
+	R-click project : Maven : Update project.
+	
+	Look at your jars in Java Resources / Libraries / Maven Dependencies.
+	
+	
+	
+VIDEO #52: The Dispatcher Servlet
+
+	Goal: Add a DispatcherServlet to application.
+	
+	Spring routes all reqeusts through a DispatcherServlet. The DispatcherServlet will then
+	go look for a Controller that will tell it what to do with that request.
+	
+	R-click project : New : Other : Web : Servlet
+	
+		Next: Check the "Use an existing Servlet class or JSP" checkbox.
+		Click Browse button: looking for class name: DispatcherServlet.
+		Click OK, Click FINISH.
+		
+	Location of the DispatcherServlet class:
+	
+		Java Resources / Libraries / Maven Dependencies / spring-webmvc /
+		org.springframework.web.servlet / DispatcherServlet.class
+		
+		
+	[ ] web.xml
+	
+		XML source view, this was added:
+		
+		  <servlet>
+			<description></description>
+			<display-name>DispatcherServlet</display-name>
+			<servlet-name>DispatcherServlet</servlet-name>
+			<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		  </servlet>
+		  
+		  <servlet-mapping>
+			<servlet-name>DispatcherServlet</servlet-name>
+			<url-pattern>/DispatcherServlet</url-pattern>
+		  </servlet-mapping>		
+	
+		
+		...and a little editing of that to:
+		
+		  <servlet>
+			<description></description>
+			<display-name>vid_52</display-name>
+			<servlet-name>vid_52</servlet-name>
+			<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		  </servlet>
+		  
+		  <servlet-mapping>
+			<servlet-name>vid_52</servlet-name>
+			<url-pattern>/</url-pattern>
+		  </servlet-mapping>		
+	
+		
+		...by changing the <url-pattern> to just "/" then the DispatcherServlet is what 
+		will be run when we go to the context root of our application.
+		
+		...and one more piece of editing to make the servlet load on start up:
+		
+		  <servlet>
+			<description></description>
+			<display-name>vid_52</display-name>
+			<servlet-name>vid_52</servlet-name>
+			<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+			<load-on-startup>1</load-on-startup>
+		  </servlet>
+		  
+		  <servlet-mapping>
+			<servlet-name>vid_52</servlet-name>
+			<url-pattern>/</url-pattern>
+		  </servlet-mapping>		
+		
+		...now the servlet will be started when this app is loaded in the server.
+		
+		...the DispatcherServlet, when it loads, wants to load XML beans, it wants to load
+		a Context. In our previous tutorials, which were not web based but application
+		based, we used a main method to create the ApplicationContext object. It will look
+		in WEB-INF for this XML file.
+		
+		...The XML file should be named whatever we gave the name of this DispatcherServlet,
+		vid_52 in my case, with a name of vid_52-servlet.xml.
+		
+			R-click WEB-INF : New : Other : Spring : Spring Bean Configuration File 
+			
+				name: vid_52-servlet.xml
+				
+			Click FINISH.
+			
+	RUN PROGRAM. Error! 
+	
+		Browser reports: 404 - resource not available.
+		
+		Tomcat warning:
+		
+			WARNING: No mapping found for HTTP request with URI [/Spring_tut_14/] in
+			DispatcherServlet with name 'vid_52'
+			
+		...I did not get the same error John has in the video:
+		
+			ClassNotFoundException: org.springframework.web.servlet.DispatcherServlet
+			
+			To get rid of this error John does the following:
+			
+				R-click project : Properties : Deployment Assembly
+				Click Add... button
+				Java Build Path entries : click next : Maven Dependencies
+				Click apply, click OK.
+				
+				...what this does is copy the Maven dependencies over to our WEB-INF/lib
+				folder so the server can find them.
+				
+				
+			...and I see why I didn't get John's error, that mapping is already present
+			for me (how it was already present for me I don't know).
+			
+			
+			
+VIDEO #53: Adding a Controller
+
+	What we've done: 
+		
+		- Added a DispatcherServlet and all requests will be routed through it.
+		
+		- Created a Spring Bean Configuration File named vid_52-servlet.xml, a place
+		  to load beans from.
+		  
+	Goal: Create a Controller. The DispatcherServlet will be looking for a Controller.
+	Probably a good idea to have one Controller for each area of the website.
+	
+	
+	[ ] Vid_53_Controller
+	
+		Open Java Resources, R-click "src" folder : add package named "controllers".
+		R-click controllers package : add new class "Vid_53_Controller"
+		
+		(you may have to Refresh for Eclipse to give a decent presentation of folders 
+		and files)
+		
+		Add the @Controller annotation above the class declaration.
+		Add a method. 
+		
+		Looks something like:
+		
+			@Controller
+			public class Vid_53_Controller {
+				
+				@RequestMapping(value = "/")
+				public String fluffyBunny(){
+					return "dangerRabbit";
+				}
+			}		
+		
+		
+		...the @RequestMapping takes a value that says what URL should map to this method.
+		This method returns a String, a "logical name" that says which 'view' to use.
+		
+		...a "ViewResolver" will determine what to actually serve up when presented with
+		the "dangerRabbit" logical name.
+		
+	
+	Our next task is to make Spring load the class (that we designated as a controller) 
+	as a bean. To accomplish this:
+	
+	[ ] vid_52-servlet.xml
+	
+		Namespaces : check the "mvc" namespace; and the "context" namespace.
+		
+		Context tab : R-click beans : insert <context:component-scan>
+		
+			Component scan element --> base-package: controllers
+			
+			
+		Source XML:
+		
+		<context:component-scan base-package="controllers"></context:component-scan>
+		
+		
+		mvc tab : R-click beans : insert <mvc:annotation-driven>
+		
+			...this makes the @Controller annotation work.
+			
+		Source XML:
+		
+		<context:component-scan base-package="controllers"></context:component-scan>
+		<mvc:annotation-driven></mvc:annotation-driven>
+			
+			
+		
+		
+VIDEO #54: View Resolvers		
+		
+0.	We have created a dangerRabbit.jsp
+		
+1.	We have created a DispatcherServlet in web.xml that loads on startup and responds to
+	all context root URL requests.
+	
+2.	We have created a Spring Bean Configuration File for the DispatcherServlet that performs
+	component scan and has mvc annotations.
+	
+3.	We have created a Controller with the @Controller annotation and it has a method with
+	the @RequestMapping annotation to also respond to all context root URL requests. This
+	method returns a "logical view name" 
+	
+	
+	What we need now: a View Resolver that the DispatcherServlet can use to take the 
+	"logical view name" obtained from the @RequestMapping annotated method and translate
+	it into an actual view to display (a .jsp file in our case).
+	
+	
+	R-click WEB-INF : New : Folder
+	
+		name: jsps		// a folder to house our .jsp files
+		
+	Drag the previously made dangerRabbit.jsp into this folder.
+	
+	
+	Now to give the DispatcherServlet a Resolver to work with. Where we are looking:
+	
+		Java Resources / Libraries / Maven Dependencies / spring-webmvc / 
+		org.springframework.web.servlet.view / 
+		
+			...in here are a bunch of different view resolvers that Spring could use.
+			
+			InternalResourceViewResolver.class  <-- what we will use.
+			
+			
+		R-click org.springframework.web.servlet.view : Copy Qualified Name
+		
+	[ ] vid_52-servlet.xml
+	
+		Add a new bean with id (whatever name you like), and in Class: paste in
+		the package name you copied above. 
+		
+		Source XML:
+		
+			<context:component-scan base-package="controllers"></context:component-scan>
+			<mvc:annotation-driven></mvc:annotation-driven>
+			
+			<bean id="jspsViewResolver"
+				class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+			</bean>		
+
+		The InternalResourceViewResolver class extends UrlBasedViewResolver.
+		UrlBasedViewResolver has two methods we care about at the moment:
+		
+			setPrefix(String) - Set the prefix that gets prepended to view names when
+								building a URL.
+								
+			setSuffix(String) - Set the suffix that gets appended to view names when
+								building a URL.
+			
+(Source for UrlBasedViewResolver: http://docs.spring.io/spring/docs/current/javadoc-api/org
+/springframework/web/servlet/view/UrlBasedViewResolver.html)
+
+		Let us add two properties to our "jspsResolver" bean that will use those
+		two methods to set these properties. 
+		
+		The "prefix" property (prepends the URL):
+		
+			The "name:" of course has to correspond	to the setter method. 
+		
+			The "value:" is the folder where the Resolver can look for files that 
+			the @ResourceMapper method said to get. 
+			
+				The @ResourceMapper method I said would return the String "dangerRabbit".
+				This prefix property will prepend "/WEB-INF/jsps/" to the 
+				"dangerRabbit" string.
+			
+		
+		The "suffix" property (appends the URL):
+		
+			The "name:" of course has to correspond to the setter method.
+			
+			The "value:" is the extension we want to append to string returned by the
+			@RequestMapper method, the "dangerRabbit" string.
+			
+		vid_52-servlet.xml SOURCE XML:
+		
+			<bean id="jspsViewResolver"
+				class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+				<property name="prefix" value="/WEB-INF/jsps/"></property>
+				<property name="suffix" value=".jsp"></property>
+			</bean>		
+			
+			
+	RUN PROGRAM. It works!
+	
+	Summary:
+	
+		web.xml creates a DispatcherServlet named vid_52 that responds to "/" URLs.
+		
+		DispatcherServlet is told by vid_52-servlet.xml to perform component scans and
+		allows for mvc annotations.
+		
+		DispatcherServlet scans and finds the @Controller class we created.
+		
+		The DispatcherServlet forwards the request to the @Controller, the Controller 
+		finds the @RequestMapper method which returns a String indicating which View to use.
+		
+		The DispatcherServlet uses the "jspViewResolver" bean we created in 
+		vid_52-servlet.xml to create a URL to the view resource we want to display.
+		
+			This InternalResourceViewResolver class prepended the string returned by the
+			@RequestMapper method with the location of our View ("/WEB-INF/jsps/), and
+			appended the string with file extension (.jsp).
+			
+			
+		Summary of summary:
+		
+		incoming request --> DispatcherServlet --> @Controller --> @RequestMapper
+		
+		--> ViewResolver creates URL to resource --> DispatcherServlet serves up the file.
+	
+	
+		
+VIDEO #55: Add Data to Session
+
+	Goal: pass data to the view (the .jsp page).
+	
+	Reminder: Session objects should generally persist during the time the user's browser
+	interacts with the server (a session).
+		
+	[ ] Vid_53_Controller
+	
+		Modify the @RequestMapper method "fluffyBunny":
+		
+		
+			@RequestMapping(value = "/")
+			public String fluffyBunny(HttpSession session){
+			
+				session.setAttribute("teeth", "Long, pointy and sharp!");
+				
+				return "dangerRabbit";
+			}	
+	
+		...we can add data to the session object and it will be available for the .jsp.
+		
+		
+	[ ] dangerRabbit.jsp
+	
+		
+		Note: John notes that embedding java inside the View is considered bad practice.		
+		
+		<%= session.getAttribute("teeth") %>
+		
+		
+		- But I'm going to use JSTL. The Tomcat / Lib folder needs .jar file: jstl-1.2.jar. 
+		  Probably comes with Java EE; For Java SE probably need to download it. I already
+		  have that .jar in the Tomcat/Lib folder
+		
+		- Add this page directive to top of .jsp:
+		
+			<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+		
+		This will display the attached session attribute:
+		
+			<p>The session attribute is: <c:out value="${sessionScope.teeth }"></c:out></p>
+			<p>The rabbits teeth are: ${teeth }</p>	
+			
+	RUN PROGRAM. It works!
+	
+	
+VIDEO #56: Using Spring Data Models
+		
+	John is going to show another way to pass data from the @RequestMapper method 
+	to the .jsp, but notes that we'll learn a more elegant way soon.
+	
+	
+	I am going to comment out the code of the previous video so this video's code doesn't
+	erase the code history.
+	
+	[ ] Vid_53_Controller
+	
+		// Video 56
+		@RequestMapping(value = "/")
+		public ModelAndView fluffyBunny(){
+			
+			ModelAndView mv = new ModelAndView("dangerRabbit");
+			
+			.....argument is the String we were returning previously, the "logical name"
+			.....for the View resource.
+			
+			Map<String, Object> model = mv.getModel();
+			
+			model.put("teeth", "Long, pointy, sharp.");
+			model.put("size", "small");
+			model.put("ferocity", 11);
+			
+			// Personal learning object: add a map, iterate over map in .jsp file.
+			Map<String, String> iterateMe = new LinkedHashMap<String, String>();
+			
+			iterateMe.put("teeth", "Long, pointy, sharp.");
+			iterateMe.put("size", "small");
+			iterateMe.put("ferocity", "11");
+			
+			model.put("myMap", iterateMe);
+			
+			return mv;
+		}		
+		
+		NOTES: this ModelAndView object is a Request object, not a Session object, so it
+		will NOT persist for a whole session. 
+		
+	[ ] dangerRabbit.jsp
+	
+		<h2>Video 56</h2>
+		<p>Access model's keys:</p>
+		<ul>
+			<li>teeth: ${teeth }</li>
+			<li>size: ${size }</li>
+			<li>ferocity: ${ferocity }</li>
+		</ul>
+		<ol>
+			<c:forEach var="map" items="${myMap }">
+				<li><p>Key:${map.key }, value is: ${map.value }</p></li>
+			</c:forEach>	
+		</ol>			
+		
+	
+	John now reveals a more elegant way to perform the above. Basically it is this: we don't
+	have to create the Model object and we can still return a string by doing the following:
+	
+	[ ] Vid_53_Controller
+	
+		! Commenting out the previous code.
+		
+		This is very similar to what we did with the HttpSession object in video 55.
+		
+		// Vid 56 --> the more elegant way
+		@RequestMapping(value = "/")
+		public String fluffyBunny(Model model){			
+			
+			model.addAttribute("teeth", "Long, pointy, sharp.");
+			model.addAttribute("size", "small");
+			model.addAttribute("ferocity", 11);
+			
+			// Personal learning object: add a map, iterate over map in .jsp
+			Map<String, String> iterateMe = new LinkedHashMap<String, String>();
+			
+			iterateMe.put("teeth", "Long, pointy, sharp.");
+			iterateMe.put("size", "small");
+			iterateMe.put("ferocity", "15");
+			
+			model.addAttribute("myMap", iterateMe);
+			
+			return "dangerRabbit";
+		}			
+			
+			
+VIDEO #57: JSTL
+
+	I used this in video 55.
+	
+	See Search Google for "JSTL core".
+	At top of .jsp page:
+		<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+		
+	Maven dependencies: search for jstl : get javax.servlet jstl 1.2 .jar
+	
+	If you expand Maven Dependencies in the Libraries folder you'll see the jstl-1.2.jar.
+	
+	I don't have that, if I expand Apache Tomcat folder in Libraries, it's there.
+	
+	
+	
+VIDEO #58: JNDI
+
+	Configure project on server to use a pooled data source connection provided by the
+	server.
+	
+	The server will implement some kind of connection pooling for you. We just have to
+	hook up to it, is all.
+	
+	The server that you upload your app to, like Google, will tell you how to configure 
+	your app's data source.
+	
+	Google search: "tomcat 7 mysql datasource jndi" 
+	
+(Source: http://tomcat.apache.org/tomcat-7.0-doc/jndi-datasource-examples-howto.html
+	#MySQL_DBCP_Example)
+	
+	At that source you will find an example of how to set up Tomcat's Context.xml file.
+	
+	Tomcat's Context.xml file lives here:
+	
+		Look in your Project Explorer for a "Servers" project. That project gets created
+		when you add a server to Eclipse. Open that, open Tomcat, see Context.xml.
+		
+	[ ] Tomcat's Context.xml
+	
+		I copy and paste the example shown at the above resource:
+		
+			<Resource name="jdbc/TestDB"
+				auth="Container" type="javax.sql.DataSource"
+				maxActive="100" maxIdle="30" maxWait="10000"
+				username="javauser" password="javadude" 
+				driverClassName="com.mysql.jdbc.Driver"
+				url="jdbc:mysql://localhost:3306/javatest"/>	
+
+		
+		Then tweak it like so to reflect our database information:
+		
+			<Resource name="jdbc/vid_36_db"
+				auth="Container" type="javax.sql.DataSource"
+				maxActive="100" maxIdle="30" maxWait="10000"
+				username="spring" password="tutorial" 
+				driverClassName="com.mysql.jdbc.Driver"
+				url="jdbc:mysql://localhost:3306/vid_36_db"/>		
+				
+				
+		...Earlier, I think in notes 7, I set up a database:
+		
+			- db name: vid_36_db
+			- user name: spring
+			- password: tutorial
+			
+			
+	Now need to update our project's web.xml file:
+	
+	[ ] web.xml
+	
+		Again, copy the example at the above noted resource and paste in:
+		
+		
+			<web-app xmlns="http://java.sun.com/xml/ns/j2ee"
+				xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+				xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee
+			http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
+				version="2.4">
+			  <description>MySQL Test App</description>
+			  <resource-ref>
+				  <description>DB Connection</description>
+				  <res-ref-name>jdbc/TestDB</res-ref-name>
+				  <res-type>javax.sql.DataSource</res-type>
+				  <res-auth>Container</res-auth>
+			  </resource-ref>
+			</web-app>		
+		
+		
+		Get rid of the stuff you already have and tweak it like so:
+		
+			  <description>Spring Tutorials</description>
+			  <resource-ref>
+				  <description>DB Connection</description>
+				  <res-ref-name>jdbc/vid_36-db</res-ref-name>****
+				  <res-type>javax.sql.DataSource</res-type>
+				  <res-auth>Container</res-auth>
+			  </resource-ref>	
+		
+		
+			****This name needs to match the name given to Tomcat's Context.xml name
+				attribute.
+	
+	[ ] dangerRabbit.jsp
+	
+		! This is for testing. Having SQL in the View (the .jsp file) breaks MVC.
+		But to follow through with testing as the Apache source above suggests:
+		
+			<%@ taglib uri="http://java.sun.com/jsp/jstl/sql" prefix="sql" %>
+
+			<sql:query var="rs" dataSource="jdbc/vid_36_db">
+					select * from offer
+			</sql:query>
+
+			<c:forEach var="row" items="${rs.rows}">
+						Name: ${row.name}<br />
+						Text: ${row.text}<br />
+			</c:forEach>
+			
+			
+	RUN PROGRAM. It works!
+	
+		When John ran his he got an error saying he didn't have the 
+		com.mysql.jdbc.Driver class.
+		
+		But I have it in: Java Resources / Libraries / Apache... /
+		mysql-connector-java-5.1.33.jar / com.mysql.jdbc / Driver.class
+		
+		John solves his problem:
+		
+			Maven Dependencies : search for mysql-connector 
+			
+			When the results pop up select "mysql mysql-connector-java"
+			
+			And he R-click project : Properties : DeploymentAssembly
+			
+				...this is where to make sure the Maven dependencies are copied
+				into the project's "WEB-INF/lib" folder when the project is deployed.
+				
+				The server cannot necessarily find the Maven jars, this will ensure
+				the .jar files that Maven brings in are copied into a place where 
+				the server expects to find them.
+				
+				
+	
+VIDEO #59: Bringing in DAO Code
+		
+	Create package for DAO files & Models. (names: dao, models)
+	
+	Copy Vid_38_Offer.java & Vid_38_OfferDAO from Spring_tut_13. Paste into package created
+	above.
+	
+		My @Inject and @Named required I use Maven Dependencies to grab the 
+		javax.inject .jar file. When I did that my errors went away.
+		
+	
+	Create a new package for XML files in the src folder. (name: config)
+	
+	
+	[ ] vid_59_dao-context.xml --> create this class.
+	
+		Spring Bean Configuration File.
+	
+		Namespaces: checkboxes for beans and context
+	
+		Source XML:
+		
+		<context:annotation-config></context:annotation-config>
+		<context:component-scan base-package="dao"></context:component-scan>		
+				
+				
+				
+				
+VIDEO #60: Loading Bean Containers with ContextLoaderListener
+
+
+	Goal: Get web.xml to load other XML files.
+	
+	
+	[ ] web.xml
+	
+		Source XML:
+		
+		<listener>
+			<listener-class>
+				org.springframework.web.context.ContextLoaderListener
+			</listener-class>
+		</listener>
+
+		<context-param>
+			<param-name>contextConfigLocation</param-name>
+
+			<param-value>
+				classpath:config/vid_59_dao-context.xml
+			</param-value>
+		</context-param>		
+		
+					
+					
+VIDEO #61: Creating a Datasource Bean
+
+
+	Goal: Connect JNDI datasource up to DAO.
+	
+	
+	[ ] vid_59_dao-context.xml
+	
+		Add Namespaces: jee
+		
+		Source XML:
+		
+		<jee:jndi-lookup jndi-name="jdbc/vid_36-db" id="dataSource"
+			expected-type="javax.sql.DataSource">
+		</jee:jndi-lookup>		
+		
+		
+				
+				
+VIDEO #62: Adding a Service Layer
+
+	Service layer controlls DAOs. Our Controllers can use the service objects to contact
+	the DAOs.
+	
+	New package: service.
+	
+	[ ] Vid_62_OfferService - create this class.
+	
+		@Service("offersService")
+		public class Vid_62_OfferService {
+
+			private Vid_59_OfferDAO offerDao;
+			
+			public List<Vid_59_Offer> getCurrent(){		
+				return offerDao.getOffers();
+			}
+
+			@Autowired
+			public void setOfferDao(Vid_59_OfferDAO offerDao) {
+				this.offerDao = offerDao;
+			}	
+		}		
+		
+	
+	[ ] vid_62_service-context.xml --> create this file in the config package.
+	
+		This is a Spring Bean Configuration File.
+		
+		Namespaces: add context --> then add context scan & annotations.
+		
+		Source XML:
+		
+		<context:component-scan base-package="service"></context:component-scan>
+		<context:annotation-config></context:annotation-config>		
+		
+		
+	[ ] web.xml
+	
+		Add vid_62_service-context.xml to be listened for:
+		
+			<context-param>
+				<param-name>contextConfigLocation</param-name>
+
+				<param-value>
+					classpath:config/vid_59_dao-context.xml
+					classpath:config/vid_62_service-context.xml
+				</param-value>
+			</context-param>		
+	
+	
+	What's happening:
+	
+	web.xml will load the service-context.xml, which will perform a scan for annotations in
+	the folder we said service-context.xml will search for those in; it will look in the
+	"service" folder and find the Vid_62_OfferService class with the @Service annotation.
+	
+	...and, hence, the Vid_62_OfferService bean will be created.
+	
+	...and, that class uses @Autowire to load a Vid_59_OfferDAO object into the class.
+	
+	web.xml --> service-context.xml --> OfferService class with injected DAO.
+	
+	
+	Now,
+
+	
+	[ ] Vid_53_Controller.java
+	
+		...you know, I think I'm going to create a new controller so I don't mess
+		up the code from previous tutorials...
+		
+		...I'll comment out the @Controller so this isn't seen on scan anymore.
+		
+		
+		
+	[ ] Vid_62_Controller.java --> create this in controllers package.
+	
+		@Controller
+		public class Vid_62_Controller {	
+			
+			private Vid_62_OfferService offerService;
+			
+			@Autowired
+			public void setOfferService(Vid_62_OfferService offerService) {
+				this.offerService = offerService;
+			}
+			
+			@RequestMapping(value = "/")
+			public String fluffyBunny(Model model){
+				
+				List<Vid_59_Offer> offers = offerService.getCurrent();
+				
+				model.addAttribute("offers", offers);
+				
+				return "dangerRabbit";
+			}
+		}	
+		
+		
+	[ ] dangerRabbit.jsp
+	
+		...and I think I'll create a new .jsp, too, for this video, this one is getting
+		cluttered up.
+		
+	
+	
+	[ ] dangerRabbit_vid62.jsp --> the new one: same name 
+	
+		Change Vid_62_Controller to return this name instead of the original one.
+		
+		I went a bit nuts. I used the "fancy table" css from here:
+		http://www.w3schools.com/css/tryit.asp?filename=trycss_table_fancy	
+
+		And here's the .jsp code:
+		
+		
+			<style>
+			#myTable {
+				font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+				width: 100%;
+				border-collapse: collapse;
+			}
+
+			#myTable td, #myTable th {
+				font-size: 1em;
+				border: 1px solid #98bf21;
+				padding: 3px 7px 2px 7px;
+			}
+
+			#myTable th {
+				font-size: 1.1em;
+				text-align: left;
+				padding-top: 5px;
+				padding-bottom: 4px;
+				background-color: #A7C942;
+				color: #ffffff;
+			}
+
+			#myTable tr.alt td {
+				color: #000000;
+				background-color: #EAF2D3;
+			}
+			</style>
+			</head>
+			<body>
+				<table id="myTable">
+					<tr>
+						<th>ID</th>
+						<th>Name</th>
+						<th>Text</th>
+						<th>email</th>
+					</tr>
+					<c:set var="alternateRows" value="2" />
+					<c:forEach var="offer" items="${offers }" varStatus="hulk">
+						<c:choose>
+							<c:when test="${hulk.index % alternateRows == 0 }">
+								<tr class="alt">
+							</c:when>
+							<c:otherwise>
+								<tr>
+							</c:otherwise>
+						</c:choose>
+								<td>${offer.id }</td>
+								<td>${offer.name }</td>
+								<td>${offer.text }</td>
+								<td>${offer.email }</td>
+							</tr>
+					</c:forEach>
+				</table>
+			</body>
+			</html>		
+		
+		
+	RUN PROGRAM. IT WORKS. THANK GOD!
+	
+	
+	
+		
+VIDEO #63: Adding a New Controller
+
+
+	[ ] Vid_63_Controller.java --> new file in controllers package.
+	
+		@Controller
+		public class Vid_63_Controller {
+			
+			@RequestMapping(value = "/")
+			public String home(){		
+				return "home";
+			}
+		}	
+
+
+	[ ] Vid_62_Controller
+	
+		Changes:
+		
+		@Controller
+		public class Vid_62_Controller {	
+			
+			private Vid_62_OfferService offerService;
+			
+			@Autowired
+			public void setOfferService(Vid_62_OfferService offerService) {
+				this.offerService = offerService;
+			}
+			
+			@RequestMapping(value = "/showOffers")
+			public String fluffyBunny(Model model){
+				
+				List<Vid_59_Offer> offers = offerService.getCurrent();
+				
+				model.addAttribute("offers", offers);
+				
+				return "dangerRabbit_vid62";
+			}
+			
+			
+			@RequestMapping(value = "/createOffer")
+			public String createOffer(){		
+				return "createOffer";
+			}
+		}		
+		
+	Unlike John, I'm keeping my "dangerRabbit" .jsp associated with the "/showOffers" URL.
+	Instead, I'll create the home.jsp
+	
+	[ ] home.jsp	--> create, put in jsps folder.
+	
+		Add links for other .jsp pages:	
+
+		<a href="${pageContext.request.contextPath}/showOffers">Show offers</a><
+		<a href="${pageContext.request.contextPath}/createOffer">Create offer</a>
+	
+		...${pageContext.request.contextPath} --> that puts in the context path for us.
+		
+	[ ] createOffer.jsp		--> create, put in jsps folder.
+	
+		Pretty simple at this point in time:
+		<h1>Create New Offer</h1>
+		
+		
+	RUN PROGRAM. Play with links. Works!
+	
+	
+
+	
+VIDEO #64: Getting URL Parameters
+
+	@RequestParam --> get a parameter from URL.
+	@PathVariable --> get a placeholder from URL (URI? whatever)
+
+		@RequestMapping(method=RequestMethod.GET, value = "/test")
+		public String fluffyBunny(Model model, @RequestParam("id")String id){
+			
+			return "test";
+		}
+		
+		@RequestMapping(method=RequestMethod.GET, value = "{id}/test")
+		public String fluffyBunny(Model model, @PathVariable("id") String id){
+			
+			return "test";
+		}	
+
+	And from StackOverflow an answer that uses both:
+(Source: http://stackoverflow.com/questions/13715811/requestparam-vs-pathvariable)
+
+	incoming URL: http://localhost:8080/Spring_tut_14/agent/007/hmss?licensetokill=true
+
+	@RequestMapping(value="/agent/{agentId}/hmss", method = RequestMethod.GET)
+	public String fluffyBunny( @PathVariable("agentId") int agent, 
+		@RequestParam(value = "licensetokill", required = false) boolean bmf) {
+	  
+		...in here you can refer to the variables:
+		
+			int theAgent = agent;
+			if(bmf != null){
+				boolean l2k = bmf;
+			}			
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+		

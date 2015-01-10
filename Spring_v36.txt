@@ -1,0 +1,298 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+
+Notes for video 36
+
+Part 1: Download MySQL and examples of using command prompt to create db and tables 
+		with data.
+
+Part 2: Video #36: Creating a Database With MySQL 
+		Creation of John's database, table, and data using command prompt.
+
+#######
+PART 1:
+#######
+Vid-36-Preparation Notes on setting up MySQL: Creating a Database With MYSQL
+
+	I took John's JSP's & Servlets course. In that I detailed what I did to load MYSQL
+	and Mysql Workbench. Through the process of writing those tutorial notes I discovered
+	that creating a database via the command prompt was easier than using Workbench.
+	
+	A truncated version of those notes follows.
+	Full version of those notes available on GitHub:
+	
+		https://github.com/RossStudtman/JSP_Tutorials/tree/master/VideoNotesCopy
+	
+		VideoNotes_6 is where database stuff begins. ViedoNotes_8 creates several databases.
+		
+		
+	Numbers in () may not be relevant.
+	
+	1. Download & Install MySQL
+	
+		At some point, I think, you'll be asked to provide a password for the "root"
+		user...write that down.
+	
+		A tutorial: https://www.youtube.com/watch?v=-cHS4HoEFV8
+		
+		MySQL d-load page: http://dev.mysql.com/downloads/windows/installer/
+		
+			I downloaded: Windows mysql-installer-web-community-5.6.19.0.msi
+			
+				- install "full version" which includes:
+					- MySQL Workbench
+					- Connector J 5.1.30
+						-wound up in Program Files(x86)/MySQL/Connector J 5.1.30
+						-in this folder: mysql-connector-java-5.1.30-bin.jar (932 KB)
+						
+	(2a.) Tomcat needs Connector/J:
+	
+		Copy and paste the Connector/J .jar in the Tomcat lib:
+		
+			Program Files / Apache Software Foundation / Tomcat 7.0 / lib <-- goes in there.
+						
+	(2b.) How to include .jar files into project:
+	
+		R-click project, Properties, Resource --> note the "Location:" information.
+		
+		...in JSPs and Servlets the .jar goes into a WEB folder or something...
+		...for Spring John will use Maven to grab the .jar file.
+		
+	(2c.) How Eclipse recognizes the MySQL server:
+	
+		The necessary mysql .jar ("Connector/J") is often already included in J2EE
+		applications by Eclipse. 			
+	
+			(Source for the following: 	http://www.eclipse.org/forums/index.php/t/74927/)
+		
+		Eclipse's database connections are located:
+				
+			Window --> Preferences --> Data Management --> Connectivity 
+			--> Database Connectivity & Driver Definitions
+					
+		Driver Definitions: "Add..." button:
+		
+			Name/Type tab: 
+			
+				Vendor Filter: select MySQL
+				
+				Available driver templates:
+					See the "MySQL JDBC Driver 5.1"
+
+				Connector/J version 5.1 is compatible with MySQL Server version 5.6 
+				(http://dev.mysql.com/doc/connector-j/en/connector-j-versions.html)
+														
+			JAR List tab: 
+			
+				Driver files:
+				
+					I have "mysql-connector-java-5.1.0-bin.jar" as the only entry.
+			
+			Properties tab:
+			
+					Connection URL: jdbc:mysql://yourHost:3306/aDatabaseWhichExists
+					Database Name: aDatabaseWhichExists
+					Driver Class: com.mysql.jdbc.Driver
+					Password: TheCorrectPassword
+					User ID: UserNameWhichExistsInDatabase		
+		
+	3. Tutorial for MySQL Workbench:
+	
+		YouTube:
+		https://www.youtube.com/watch?v=X_umYKqKaF0&list=PLWx5a9Tn2EvH0q2WXpUBqptxi5640qk9O
+		
+		MySQL:
+		http://dev.mysql.com/doc/workbench/en/wb-getting-started-tutorial-creating-a-model.html
+		
+	4. MySQL using command prompt:
+	
+		FIRST, to get to windows command prompt: (windows key + r), type in "cmd".
+		
+		(note: maybe installing MySQL takes care of creating this path for you? If not,
+		then here's how to do it:)
+		
+			SECOND, to get the command prompt to recognize "mysql" -- without having to enter
+			the full path name to where MySQL is stored on your system -- you need to set a
+			"path" to MySQL. How to do that:
+			
+				MySQL website:
+				http://dev.mysql.com/doc/mysql-windows-excerpt/5.1/en/
+				mysql-installation-windows-path.html
+				
+				Basics of setting paths, StackOverflow:
+				http://superuser.com/questions/317631/setting-path-in-windows-7-command-prompt
+				
+				Overview of what paths are and how to set them:
+				http://superuser.com/questions/284342/
+				what-are-path-and-other-environment-variables-and-how-can-i-set-or-use-them
+	
+		Tutorial for adding new user:
+		https://www.digitalocean.com/community/tutorials/
+		how-to-create-a-new-user-and-grant-permissions-in-mysql
+		
+		// Add new user
+		
+			Log into MySQL server: mysql -u root -p
+			Enter password. See command prompt change to "mysql>"
+			
+			Creating a user with name of "ross" with password of "hello" that has access to
+			a database named "mydatabase":
+			
+				CREATE USER 'ross'@'localhost' IDENTIFIED BY 'hello';
+				GRANT ALL PRIVILEGES ON mydatabase.* TO 'ross'@'localhost';
+				FLUSH PRIVILEGES;
+			
+			
+		// Change back to "root" user:	
+		
+			If already at mysql prompt: "mysql>" then type "exit" to exit.
+			Now type: mysql -u root -p
+			Get prompted for password --> enter password.
+			Now you've switched to root user.
+		
+		
+		// Switch to different user:
+		
+			If already at mysql prompt: "mysql>" then type "exit" to exit.		
+			Now type: mysql -u ross -p
+			Get prompted for password --> enter "hello" password.
+			Now you've switched to "ross" user.
+			
+			Optionally, you can put mysql login info all on one line, only detail here is
+			no space between "-p" and the password:	mysql -u ross -phello	
+
+		
+	 ***// EXAMPLE: Create a database and a table and insert some data:
+	 
+			Open command prompt.
+			Enter: "mysql -u root -p".
+			Enter: the password					--> access
+			
+			Enter: "CREATE DATABASE vid_36;"	--> Query Ok, 1 row affected
+			Enter: "use vid_36;"				--> Database changed
+			
+			Enter: "create table images(id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+					imageName VARCHAR(25), attribution_url varchar(100), 
+					attribution_name varchar (25), image_extension varchar (5),
+					number_of_rankings int, average_ranking float);"
+					
+					--> Query OK, 0 rows affected.
+					
+			Enter: "insert into images(imageName, image_extension, number_of_rankings, 
+					average_ranking) values ('WantedBook', 'jpg', 5, 3);" 
+					
+					--> Query OK, 1 row affected.
+														
+			Enter: ....do the same thing for the other 8 images....   
+				
+			Enter: "select * from images;"
+
+					--> See the data in database. 9 Rows in set.
+				
+				
+			Now create a user and password for that database:
+				
+			Enter: "create user 'bunny'@'localhost' identified by 'rabbit';"								
+			Enter: "grant all privileges on vid_36.* to 'bunny'@'localhost';"
+			Enter: "flush privileges;"								
+					
+			Now test the new user, try to log in as new user:
+					
+			Enter: "exit"
+			Enter: "mysql -u bunny -p"
+			Enter: "rabbit"	--> and user "bunny" is granted access to vid_36 database.
+					
+			Enter: "show databases;" 		--> user can see vid_36
+			Enter: "use vid_36;"			--> Database changed
+			Enter: "show tables;"			--> shows the images table
+			Enter: "desc images"			--> shows table's structure (describe table)
+			Enter: " select * from images;"	--> see 9 records in vid_36's image table.	 
+		 
+
+		// Another EXAMPLE of adding data to a table:
+		
+			Open command prompt.
+			Enter: mysql -u ross -p
+				Prompted for password: "hello".
+			
+				Access granted.
+			
+			Enter: "use mydatabase" to change to that database.
+			Enter: "show tables;" to show the tables --> one table: "users"
+			Enter: "select * from users;" --> "empty set"
+			
+			Add data:
+			
+			Enter: "desc users;" to remind me of the table's structure.			
+			
+			Enter: "insert into users(email, password) values("a@a.com", "abC123"); 
+				--> 1 row affected.
+				
+			Enter: "insert into users(email, password) values ("b@b.com", "ddD123"); 
+				--> 1 row affected.			
+				
+							
+#######
+PART 2:
+#######				
+VIDEO #36: 				
+
+	To create the table John is using, via the command prompt:
+	
+		Open command prompt.
+		Enter: "mysql -u root -p".
+		Enter: the password				// your root password
+
+		Enter: "CREATE DATABASE vid_36_db;"	--> Query Ok, 1 row affected
+		Enter: "use vid_36_db;"				--> Database changed
+
+		Enter: "CREATE TABLE offers
+				(
+					id INT(11) NOT NULL AUTO_INCREMENT,
+					name VARCHAR(100) NOT NULL,
+					email VARCHAR(60) NOT NULL,
+					text TEXT NOT NULL,
+					PRIMARY KEY (id)
+				);"
+			
+			...note, the spaceing on that is just to make the structure of it more readable.
+			
+		Enter: "INSERT INTO offers(name, email, text) 
+				VALUES
+				('bob','bob@nowhereatall.com','I will write Java for you'),
+				('Mike','mike@nowhereatall.com','Web design, very cheap'),
+				('Sue','sue@nowhereatall.com','PHP coding');
+		
+	
+	Sanity check:
+	
+		Enter: "select * from offers;"		--> data is in table?
+		
+	Create a user and password for the vid_36_db:	
+		
+		Enter: "create user 'spring'@'localhost' identified by 'tutorial';"								
+		Enter: "grant all privileges on vid_36_db.* to 'spring'@'localhost';"
+		Enter: "flush privileges;"								
+				
+		Now test the new user, try to log in as new user:
+				
+		Enter: "exit"					--> Bye
+
+		(Enter: cls		--> clears the screen, if you want to do that)
+		
+		Enter: "mysql -u spring -p"
+		Enter: "tutorial"	--> and user "spring" is granted access to vid_36 database.
+				
+		Enter: "show databases;" 		--> user can see vid_36_db
+		Enter: "use vid_36_db;"			--> Database changed
+		Enter: "show tables;"			--> shows the images table
+		Enter: "desc offers"			--> shows table's structure (describe table)
+		Enter: " select * from images;"	--> see 9 records in vid_36_db's image table.
+
+	All that checks out for me. So onward.
+	
+
+
+  

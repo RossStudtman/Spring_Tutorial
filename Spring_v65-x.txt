@@ -1,0 +1,246 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for video 65 through ..................
+
+Video #65: Creating a Form
+Video #66: Getting Form Values
+Video #67: Adding CSS Styles
+Video #68: Serving Static Resources
+Video #69: Adding Hibernate Form Validation Support
+Video #70: More Form Validation Tags
+
+
+Copying Spring_tut_14 to create Spring_tut_15.
+
+Had to remove Spring_tut_14 from Tomcat server to Spring_tut_15 could run.
+
+
+VIDEO #65: Creating a Form
+
+	[ ] Vid_62_Controller
+	
+		Add another @RequestMapping method for "doCreate" -- it will handle form submission.
+				
+		@RequestMapping(value = "/doCreate")
+		public String doCreate(){		
+			return "offerCreated";
+		}
+
+	[ ] offerCreated.jsp --> create this in jsps folder.
+	
+		<h1>Offer Created</h1>
+		
+		
+	[ ] createOffer.jsp
+	
+		Goal: Create a simple Create Offer table.
+		Good HTML table resource: https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Forms
+		
+		Quick and dirty:
+		
+		<style>
+		form {
+			margin-left: auto;
+			margin-right: auto;
+			width: 500px;
+			background-color: #eee;
+			padding: 25px;
+		}
+
+		label {
+			display: block;
+		}
+
+		label>span {
+			display: inline-block;
+			float: left;
+			padding-right: 10px;
+			text-align: right;
+			width: 20%;
+		}
+
+		fieldset>input {
+			float: right;
+		}
+		</style>
+		</head>
+		<body>
+			<h1>Video 65: Offer Created</h1>
+
+			<form method="get" action="${pageContext.request.contextPath}/doCreate">
+				<fieldset>
+					<legend>Create Offer:</legend>
+					<label><span>Name:</span> <input type="text" name="name" /></label> 
+					<label><span>Email:</span><input type="text" name="email" /></label> 
+					<label><span>Text:</span>
+						<textarea cols="35" rows="3" name="text"></textarea>
+					</label> 
+					<input type="submit" value="Submit" />
+				</fieldset>
+			</form>
+		</body>
+		
+		
+	RUN PROGRAM. Works.
+		
+		
+VIDEO #66: Getting Form Values
+
+	[ ] createOffer.jsp
+	
+		Change method to post.
+		
+	[ ] Vid_62_Controller
+	
+		@RequestMapping(value = "/doCreate", method=RequestMethod.POST)
+		public String doCreate(Model model, Vid_59_Offer offer){	
+			System.out.println(offer);
+			return "offerCreated";
+		}	
+		
+	
+	RUN PROGRAM. Works.
+
+
+	
+VIDEO #67: 	Adding CSS Styles
+
+
+	Just basically making the form look better.
+	
+	I've already done that in vid 64.
+	
+	
+	
+VIDEO #68: Serving Static Resources - like CSS
+
+	[ ] resources <-- a folder in WebContent
+	
+	[ ]	main.css <-- new file, create in resources folder.
+	
+		In "resources" folder: New : Web : CSS File
+		
+		Move CSS out of createOffer.jsp, into this file.
+		
+	
+	Goal: Make this CSS file available through the dispatcher servlet.
+		
+	Remember: DispatcherServlet is defined in web.xml; I gave name of "vid_52".
+	
+		The flow:
+		web.xml 			--> DispatcherServlet (named "vid_52")
+		DispatcherServlet 	--> vid_52-servlet.xml 
+		vid_52-servlet.xml 	--> (tells dispatcher to perform scans, looking for annotations)
+		DispatcherServlet 	--> Vid_62_Controller has @Controller annotation
+		Vid_62_Controller 	--> has a @RequestMapping method in it
+		@RequestMapping method --> returns a "logical name" string.
+		vid_52-servlet-xml 	--> has ViewResolver bean DispatcherServlet can use
+		ViewResolver bean 	--> uses "logical name" returned by @RequestMapper method to
+							  find the "View" the DispatcherServlet will serve up.
+
+							  
+	[ ] vid_52-servlet.xml
+
+		mvc tab : R-click beans : Insert <mvc:resources> element.
+		
+		"location:" <-- relative to WebContent folder --> /resources <-- our folder name		
+		
+		"mapping:" <-- URL for accessing the resources --> "/static/*"
+
+		Source XML: 	
+		
+		<mvc:resources location="/resources/" mapping="/static/*"></mvc:resources>
+
+
+	RUN PROGRAM. ...tomcat won't start...
+	
+	
+	My program wouldn't run. Kept getting an error that Tomcat is running.
+	Opened "Monitor Tomcat" application (in Windows' Start : All Programs) to ensure
+	that another instance of Tomcat didn't somehow get started outside of Eclipse; there
+	wasn't one. 
+	
+	I used this website:
+	
+	http://helpdeskgeek.com/windows-7/use-netstat-to-see-listening-ports-and-pid-in-windows/
+	
+	to discover what program was using the ports Tomcat needed. It was a java program.
+	I closed Eclipse. I looked and the java program was still using those ports. So I 
+	"ended" the service using those ports. Fired Eclipse back up and now Tomcat can
+	run.
+	
+	RUN PROGRAM. 
+	
+	See URL in browser address: 
+	
+		http://localhost:8080/Spring_tut_15/
+		
+	Add this to the end: tiger/vid_68_createOffer.css
+	
+		...and mine isn't working like John's. I'm being hit with dialog boxes asking me
+		if I want to download the resource. Mildly frustrating.
+		
+		
+	....I couldn't get it to work like John's video where the .css file opens in an Eclipse
+	browser. I have no idea why not. But the good news is when adding the following to 
+	createOffer.jsp it uses the css:
+
+	<link href="${pageContext.request.contextPath }/static/css/main.css" 
+		rel="stylesheet" type="text/css" />
+			
+			
+	RUN PROGRAM. Works.
+	
+	SUMMARY:
+	
+	[ ] vid_52-servlet:
+	
+		<!-- Video 68: Serving Static Resources -->
+		<mvc:resources location="/resources/" mapping="/static/**"></mvc:resources>
+	
+	
+	[ ] createOffer.jsp:
+	
+	
+		<link href="${pageContext.request.contextPath }/static/css/main.css" 
+		rel="stylesheet" type="text/css" />
+	
+
+
+
+
+VIDEO #69: Hibernate Form Validation
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+		
+		

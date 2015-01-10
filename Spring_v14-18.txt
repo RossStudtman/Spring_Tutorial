@@ -1,0 +1,695 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for videos 14 through 18
+
+Video #14: Setting List Properties
+Video #15: Lists of Beans
+Video #16: Inner Beans
+Video #17: Setting Map Properties
+Video #18: Setting Map<key, custom class> properties
+#################################################
+REVIEW OF COLLECTIONS IN Spring_Bean_Configuration_File
+SUMMARY OF COLLECTIONS
+#################################################
+
+
+Video 14 code: Spring_tut_4
+Video 15 code: Spring_tut_5
+Video 16 code: Spring_tut_5
+Video 17 code: Spring_tut_6
+Video 18 code: Spring_tut_6
+
+
+VIDEO #14: Setting List Properties
+
+
+	I need to create a new project for this video:
+	
+		1. Create new Maven project. - checkbox: Create simple project.
+			- Group ID (package name): spring_tutorial_4
+			- Artifact ID (project name): Spring_tut_4
+			
+		2. Add Maven dependencies: spring-core, spring-beans, spring-context.
+		
+			Open pom.xml, click "Dependencies" tab:
+			
+				search for "springframework"
+				
+					Add the .jar files for spring-core, ...beans, ...context.				
+		
+		3. Add package to src/main/java: "vid_14"
+		4. Add package to src/main/java: "vid_14_beans"
+		
+		5. Add main-method class to vid_14 package: Vid_14_Main.
+		6. Add Vid_14_FruitBasket class to vid_7 package: Vid_14_FruitBasket.
+		
+			Vid_14_FruitBasket
+			------------------
+			-name: String
+			-fruits: List<String>
+			+FruitBasket(name: String, fruits: List<String>)
+			+toString(): String
+		
+		7. Add XML Spring Bean Configuration File to vid_14_beans package: vid_14_beans.xml
+		
+			R-click project / new / Spring / Spring Bean Configuration File
+			
+		8. Add new bean to vid_14_beans.xml: 
+		
+			<bean id="fruitbasket" class="vid_14.Vid_14_FruitBasket"></bean>
+			
+		9. Create ApplicationContext object in Vid_14_Main:
+		
+			ApplicationContext context =
+				new ClassPathXmlApplicationContext("vid_14_beans/vid_14_beans.xml");
+			
+			Vid_14_FruitBasket fruitbasket = (Vid_14_FruitBasket)context.getBean("fruitbasket");
+			
+			sysout(fruitbasket);
+			
+			((ClassPathXmlApplicationContext)context).close();
+			
+		10. Run it... it won't work quite yet. 
+		
+			There an error in the vid_14_beans.xml, it says quite appropriately:
+			
+				"No constructor with 0 arguments defined in vid_14.Vid_14_FruitBasket"
+		
+
+	The learning objective of this video:
+	
+		The constructor to the Vid_14_FruitBasket takes a List<String>, how do we set that?
+		
+		What is about to be taught also works if we were using a set method to set the
+		property (rather than the constructor).
+		
+		[ ] vid_14_beans.xml
+		
+			In "beans" tab Select "fruitbasket", R-click, insert <constructor-arg>:
+			
+				name: name
+				value: Love Basket
+				
+			R-click, insert <constructor-arg> 
+				--> R-click "constructor-arg" and select "insert <list> element"
+					--> R-click "list" and select "insert <value> element"
+			
+			
+			Have a look at the XML source:
+			
+				<bean id="fruitbasket" class="vid_14.Vid_14_FruitBasket">
+					<constructor-arg name="name" value="Love Basket"></constructor-arg>
+					<constructor-arg>
+						<list>
+							<value></value>
+						</list>
+					</constructor-arg>
+				</bean>
+				
+			Add in some values. XML source now looks like:
+			
+				<bean id="fruitbasket" class="vid_14.Vid_14_FruitBasket">
+					<constructor-arg name="name" value="Love Basket"></constructor-arg>
+					<constructor-arg>
+						<list>
+							<value>Roses</value>
+							<value>Grapes</value>
+							<value>Apples</value>
+							<value>Banana</value>				
+						</list>
+					</constructor-arg>
+				</bean>
+			
+	RUN PROGRAM. It works!
+	
+	One last note:
+	
+		You could do <set> instead of <list> and Spring will ensure there are no 
+		duplicates. The following works even if we leave our parameter as List<String>:
+		
+			<bean id="fruitbasket" class="vid_14.Vid_14_FruitBasket">
+				<constructor-arg name="name" value="Love Basket"></constructor-arg>
+				<constructor-arg>
+					<set>
+						<value>Roses</value>
+						<value>Grapes</value>
+						<value>Apples</value>
+						<value>Banana</value>				
+					</set>
+				</constructor-arg>
+			</bean>
+		
+		
+		And if the property were a Set instead of a List the xml could still either
+		use a <set> or <list> --> just depends on if you want to allow duplicate values.
+		
+		
+	Summary:
+	
+		You created a Class bean that had a List<String> property.
+		This property was set via the constructor. It could have been set via a 'set' method.
+		You supplied arguments for the list via:
+		
+			<constructor-arg>
+				<list>
+					<value> list entry </value>
+				</list>
+			</constructor-arg>
+		
+		
+		
+VIDEO #15: Using Other Beans in Lists
+
+
+	Creating another project! We should be starting to get good at this by now but 
+	repetition is the mother of all skill so... here it is again.
+	
+	This time we create an Animal class and a Jungle class, both of which will be 
+	beans.
+	
+		1. Create new Maven project. - checkbox: Create simple project.
+			- Group ID (package name): spring_tutorial_5
+			- Artifact ID (project name): Spring_tut_5
+			
+		2. Add Maven dependencies: spring-core, spring-beans, spring-context.
+		
+			Open pom.xml, click "Dependencies" tab:
+			
+				search for "springframework"
+				
+					Add the .jar files for spring-core, ...beans, ...context.				
+		
+		3. Add package to src/main/java: "vid_15"
+		4. Add package to src/main/java: "vid_15_beans"
+		
+		5. Add main-method class to vid_15 package: Vid_15_Main.
+		
+		6. Add Vid_15_Animal class to vid_15 package: Vid_15_Animal
+		
+			Vid_15_Animal
+			----------------
+			-name: String
+			-type: String
+			+getName(): String
+			+setName(name: String): void
+			+getType(): String
+			+setType(type: String): void
+			+toString(): String		
+			
+		7. Add Vid_15_Jungle class to vid_15 package: Vid_15_Jungle.
+		
+			Vid_15_Jungle
+			------------------
+			-largest: Vid_15_Animal
+			-animals: List<Vid_15_Animal>
+			+getLargest(): String
+			+setLargest(animal: Vid_15_Animal): void
+			+getAnimals(): List<Vid_15_Animal>
+			+setAnimals(animals: List<Vid_15_Animall>): void
+			+toString(): String			
+
+		
+		8. Add XML Spring Bean Configuration File to vid_15_beans package: vid_15_beans.xml
+		
+			R-click project / new / Spring / Spring Bean Configuration File
+			
+		9. Add new beans to vid_15_beans.xml: 
+			
+			// Jungle bean
+			<bean id="jungle" class="vid_15.Vid_15_Jungle"></bean>
+			
+			// Animal beans
+			...for practice, use the P namespace technique:
+			
+				Go to the "Namespaces" tab in vid_15_beans.xml.
+				
+				Select the checkbox with the "P" (a 'P' with a circle around it).
+				
+				Type the following into the source XML:
+				
+				<!-- Animal Beans -->
+				<bean id="lion" class="vid_15.Vid_15_Animal" 
+					p:name="Igor"
+					p:type="lion"></bean>
+
+				<bean id="elephant" class="vid_15.Vid_15_Animal" 
+					p:name="Richard"
+					p:type="elephant"></bean>
+					
+				<bean id="snake" class="vid_15.Vid_15_Animal" 
+					p:name="Bob"
+					p:type="elephant"></bean>				
+			
+			
+		10. Create ApplicationContext object in Vid_15_Main:
+		
+			ApplicationContext context =
+				new ClassPathXmlApplicationContext("vid_15_beans/vid_15_beans.xml");
+			
+			Vid_15_Animal animal = (Vid_15_Animal)context.getBean("lion");
+			
+			sysout(animal);
+			
+			((ClassPathXmlApplicationContext)context).close();
+			
+		11. Run it...
+
+			result in console:
+				
+				Vid_15_Animal [name=Igor, type=lion]
+				
+			...excellent! The plumbing is done. Onward!
+			
+			
+	To do: Set Jungle bean properties, which will be references to the animal beans.
+	
+	[ ] vid_15_beans.xml - 
+	
+		beans tab, R-click jungle bean, insert <property> element:
+		
+			"name:" 	--> largest		// an instance field of Vid_15_Jungle
+			"ref:"		--> elephant	// another bean's id
+			
+
+		R-click jungle bean, insert <property> element:
+		
+			"name:" 	--> animals
+			
+			R-click animals property, insert <list> element:
+			
+				R-click list property, insert <ref> element:
+				
+					"bean:" 	--> snake 	// another bean's id
+					
+					
+		Look at the XML source view:
+		
+			<!-- Jungle Bean -->
+			<bean id="jungle" class="vid_15.Vid_15_Jungle">
+				<property name="largest" ref="elephant"></property>
+				<property name="animals">
+					<list>
+						<ref bean="snake" />
+					</list>
+				</property>
+			</bean>		
+			
+			
+			...add in <ref bean="elephant"> and ...lion.
+			
+			
+	[ ] Vid_15_Main
+	
+		Make a Vid_15_Jungle object.
+			
+		
+	RUN PROGRAM. It works!
+	
+	
+	Summary:
+	
+		You created a Class bean that has a List that contains another Class bean:
+		
+			List<OtherClassBean> beanList
+			
+		You created several xml bean entries for the OtherClassBean.
+		
+		You supplied arguments to the List via:
+		
+			<property name="listPropertyName">
+				<list>
+					<ref bean="xmlOtherClassBean1" />
+					<ref bean="xmlOtherClassBean2" />
+					<ref bean="xmlOtherClassBean3" />
+					...and so on...
+				</list>
+			</property>
+		
+	
+	
+			
+			
+VIDEO #16: Inner Beans - bean within a bean
+
+
+	In the last video we had Jungle properties refer to other beans.
+	
+	Here's another way to do that using inner beans. IF you don't need to refer to the injected
+	bean in another place then it may be preferrable to use an inner bean.
+	
+	How it works: instead of setting the Jungle property "largest" to a reference, simply
+	write a bean for it on the spot. This inner bean cannot be referenced by ID from outside
+	the property. Like so:
+	
+		<!-- Jungle Bean -->
+		<bean id="jungle" class="vid_15.Vid_15_Jungle">
+			<!-- Video 16 comments this out in favor of creating an inner bean -->
+			<!-- <property name="largest" ref="elephant"></property> -->
+			
+			<!-- Video 16 inner bean -->		
+			<property name="largest">		
+				<bean class="vid_15.Vid_15_Animal"
+					p:name="Hungry"
+					p:type="T-Rex"></bean>
+			</property>		
+			
+			<property name="animals">
+				<list>
+					<ref bean="snake" />
+					<ref bean="elephant" />
+					<ref bean="lion" />
+				</list>
+			</property>
+		</bean>
+		
+	RUN PROGRAM. It works. T-Rex is now the largest. The "T-Rex" bean is scoped to the property
+	it is a child of.
+	
+	
+VIDEO #17: Setting a Map property in a bean.
+	
+
+	Well'p. John has changed the Jungle class to have a property (aka field) of type Map.
+
+	I think if I make all the changes of this video in the same project as the last video
+	then that code will start to be unclear. So...yeah...going to make another project. I
+	don't want to -- which is probably a good sign that I should because if it feels like
+	a hassle because the process isn't automatic -- I need the practice.
+	
+		1. Create new Maven project. - checkbox: Create simple project.
+			- Group ID: spring_tutorial_6
+			- Artifact ID: Spring_tut_6
+			
+		2. Add Maven dependencies: spring-core, spring-beans, spring-context.		
+			- pom.xml --> "Dependencies" --> "springframework" --> add .jar files.				
+		
+		3. Create packages in src/main/java: vid_17 & vid_17_beans.
+		
+		4. Create Vid_17_Main class --> add to vid_17 package.
+			
+		5. Create Vid_17_Jungle class --> add to vid_17 package.
+		
+			Vid_17_Jungle
+			------------------
+			-foods: Map<String, String>
+			+setFoods(foods: Map<String, String>): void
+			+toString(): String
+
+		
+		6. Create vid_17_beans.xml: Spring Bean Configuration File --> add to vid_17_beans package.
+			
+
+	Preparation for video complete.
+	
+	Now to set up the xml:
+	
+	[ ] vid_17_beans.xml
+	
+		beans tab, Add bean button:
+		
+			ID: jungle
+			Class: vid_17.Vid_17_Jungle
+			
+		R-click jungle, insert <property>:
+		
+			name: foods
+			
+			R-click foods, insert <props> element,
+			
+				R-click props, insert <prop> element:
+				
+					key: gorilla 		// name of key entry we want in map
+					
+		XML source:
+		
+			<!-- Vid 17 Jungle Bean -->
+			<bean id="jungle" class="vid_17.Vid_17_Jungle">
+				<property name="foods">
+					<props>
+						<prop key="gorilla"></prop>
+					</props>
+				</property>
+			</bean>		
+			
+			
+		You can add the Map's key value pairs like so:
+		
+				<prop key="gorilla">banana</prop>
+				<prop key="panda">bamboo</prop>
+				<prop key="snake">eggs</prop>
+				
+	[ ] Vid_17_Main:
+	
+ApplicationContext context = new ClassPathXmlApplicationContext("vid_17_beans/vid_17_beans.xml");
+		
+		Vid_17_Jungle jungle = (Vid_17_Jungle)context.getBean("jungle");
+		
+		System.out.println(jungle);
+		
+		((ClassPathXmlApplicationContext)context).close();
+	
+
+	RUN PROGRAM. It works!
+	
+	Summary:
+	
+		You created a Class bean that had a Map property.
+		The Map property is set via a 'set' method.
+		You supplied arguments to the map via:
+		
+			<property name="mapPropertyName">
+				<props>
+					<prop key="key1">value1</prop>
+					<prop key="key2">value2</prop>
+					<prop key="key3">value3</prop>
+					...and so on...
+				</props>
+			</property>
+			
+			
+
+VIDEO #18: 
+		
+	Using a Class bean as the value in a Map property.
+		
+		
+	Alterations & additions to code from video 17:
+	
+	[ ] Vid_17_Jungle
+	
+		Vid_17_Jungle
+		---------------
+		-foods: Map<String, String>
+		-animals: Map<String, Animal>
+		+setFoods(foods: Map<String, String>):void
+		+setAnimals(animals: Map<String, Animal>):void
+		+toString(): String
+		
+	[ ] Vid_18_Animial --> in vid_17 package.
+	
+		Vid_18_Animal
+		--------------
+		-name: String
+		-type: String
+		+getName(): String
+		+setName(name: String): void
+		+getType(): String
+		+setType(type: String): void
+		+toString(): String				
+		
+	[ ] vid_17_beans.xml - add animal beans
+	
+		<!-- Vid 18 Animal Beans -->
+		<bean id="lion" class="vid_17.Vid_18_Animal">
+			<property name="name" value="Igor"></property>
+			<property name="type" value="lion"></property>
+		</bean>
+
+		<bean id="elephant" class="vid_17.Vid_18_Animal">
+			<property name="name" value="Babar"></property>
+			<property name="type" value="elephant"></property>
+		</bean>
+
+		<bean id="snake" class="vid_17.Vid_18_Animal">
+			<property name="name" value="Crowley"></property>
+			<property name="type" value="snake"></property>
+		</bean>	
+		
+	[ ] vid_17_beans.xml - add plumbing for Vid_17_Jungle's Map<String, Animal> property.
+	
+		Beans tab, R-click jungle, insert <property>:
+		
+			name: animals				// Jungle's Map property name
+			
+			R-click animals, insert <map>:
+			
+				R-click map, insert <entry>:
+				
+					key: lion			// the String key for this Map entry
+					
+					value-ref: lion		// the ID of a .xml bean
+					
+		XML Source:
+		
+			<!-- Vid 17 Jungle Bean -->
+			<bean id="jungle" class="vid_17.Vid_17_Jungle">
+				<property name="foods">
+					<props>
+						<prop key="gorilla">banana</prop>
+						<prop key="panda">bamboo</prop>
+						<prop key="snake">eggs</prop>
+					</props>
+				</property>
+				
+				<!-- Vid 18 addition -->
+				<property name="animals">
+					<map>
+						<entry key="lion" value-ref="lion"></entry>
+					</map>
+				</property>
+			</bean>		
+			
+			
+			Add these:
+			
+				<entry key="elephant" value-ref="elephant"></entry>
+				<entry key="snake" value-ref="snake"></entry>
+				
+				Note: of course the keys, being Strings, can be whatever you like.
+				Except, of course, this being a Hashmap duplicates are not allowed.
+				
+	RUN PROGRAM. It works! 
+					
+				
+#################################################
+				
+REVIEW OF COLLECTIONS IN Spring_Bean_Configuration_File:
+
+	vid_14_beans.xml:
+	
+	
+			<bean id="fruitbasket" class="vid_14.Vid_14_FruitBasket">
+				<constructor-arg name="name" value="Love Basket"></constructor-arg>
+				<constructor-arg>
+					<list>
+						<value>Roses</value>
+						<value>Grapes</value>
+						<value>Apples</value>
+						<value>Banana</value>				
+					</list>
+				</constructor-arg>
+			</bean>	
+			
+	
+	vid_15_beans.xml:
+	
+			<!-- Jungle Bean -->
+			<bean id="jungle" class="vid_15.Vid_15_Jungle">
+				<!-- Video 16 comments this out in favor of creating an inner bean -->
+				<!-- <property name="largest" ref="elephant"></property> -->
+				
+				<!-- Video 16 inner bean -->		
+				<property name="largest">		
+					<bean class="vid_15.Vid_15_Animal"
+						p:name="Hungry"
+						p:type="T-Rex"></bean>
+				</property>		
+				
+				<property name="animals">
+					<list>
+						<ref bean="snake" />
+						<ref bean="elephant" />
+						<ref bean="lion" />
+					</list>
+				</property>
+			</bean>
+
+			<!-- Animal Beans -->
+			<bean id="lion" class="vid_15.Vid_15_Animal" p:name="Igor"
+				p:type="lion"></bean>
+
+			<bean id="elephant" class="vid_15.Vid_15_Animal" p:name="Richard"
+				p:type="elephant"></bean>
+				
+			<bean id="snake" class="vid_15.Vid_15_Animal" p:name="Bob"
+				p:type="elephant"></bean>	
+		
+		
+	vid_17_beans.xml:
+	
+	
+			<!-- Vid 17 Jungle Bean -->
+			<bean id="jungle" class="vid_17.Vid_17_Jungle">
+				<property name="foods">
+					<props>
+						<prop key="gorilla">banana</prop>
+						<prop key="panda">bamboo</prop>
+						<prop key="snake">eggs</prop>
+					</props>
+				</property>
+				
+				<!-- Vid 18 addition -->
+				<property name="animals">
+					<map>
+						<entry key="lion" value-ref="lion"></entry>
+						<entry key="elephant" value-ref="elephant"></entry>
+						<entry key="snake" value-ref="snake"></entry>
+					</map>
+				</property>
+			</bean>
+
+			<!-- Vid 18 Animal Beans -->
+			<bean id="lion" class="vid_17.Vid_18_Animal">
+				<property name="name" value="Aslan"></property>
+				<property name="type" value="lion"></property>
+			</bean>
+
+			<bean id="elephant" class="vid_17.Vid_18_Animal">
+				<property name="name" value="Horton"></property>
+				<property name="type" value="elephant"></property>
+			</bean>
+
+			<bean id="snake" class="vid_17.Vid_18_Animal">
+				<property name="name" value="Crowley"></property>
+				<property name="type" value="snake"></property>
+			</bean>	
+		
+#################################################		
+SUMMARY OF COLLECTIONS:
+
+	List<String>
+	
+		<list>
+			<value>some_value</value>
+			<value>some_value</value>				
+		</list>	
+		
+		
+	List<Bean>:
+	
+		<list>
+			<ref bean="bean_id1" />
+			<ref bean="bean_id2" />
+		</list>
+		
+		
+	Map<String, String>:
+	
+		<props>
+			<prop key="key1">some_value</prop>
+			<prop key="key2">some_value</prop>
+			<prop key="key3">some_value</prop>
+		</props>	
+	
+	
+	Map<String, Bean>:
+	
+		<map>
+			<entry key="key1" value-ref="bean_id1"></entry>
+			<entry key="key2" value-ref="bean_id2"></entry>
+			<entry key="key3" value-ref="bean_id3"></entry>
+		</map>
+
+	

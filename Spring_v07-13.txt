@@ -1,0 +1,841 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for videos 7 through 13
+
+Video  #7: Constructor Arguments, beans
+Video  #8: Setting Bean Properties
+Video  #9: Dependency Injection
+Video #10: Bean Scope
+Video #11: Init & Destroy Methods
+Video #12: Factory-Bean & Factory-Method
+Video #13: The P Namespace
+
+
+Video  7 code: Spring_tut_3
+Video  8 code: Spring_tut_3
+Video  9 code: Spring_tut_3
+Vide  10 code: Spring_tut_3
+Video 11 code: Spring_tut_3
+Video 12 code: Spring_tut_3
+Video 13 code: Spring_tut_3
+
+
+
+VIDEO #7: Constructor Arguments
+
+	John is continuing the lesson from Video #6's code. I, on the other hand, will create a new
+	project. So, more practice setting it up:
+	
+		1. Create new Maven project. - checkbox: Create simple project.
+			- Group ID (package name): vid_7
+			- Artifact ID (project name): Spring_tut_3
+			
+		2. Add Maven dependencies: spring-core, spring-beans, spring-context.
+		
+		3. Add package to src/main/java: "vid_7"
+		4. Add package to src/main/java: "vid_7_beans"
+		
+		5. Add main-method class to vid_7 package: Vid_7_Main.
+		6. Add Person class to vid_7 package: Vid_7_Person.
+		
+		7. Add XML Spring Bean Configuration File to vid_7_beans package: vid_7_beans.xml
+		8. Add new bean to vid_7_beans.xml: 
+		
+			<bean id="vid_7_personBean" class="vid_7.Vid_7_Person"></bean>
+			
+		9. Create ApplicationContext object in Vid_7_Main:
+		
+			ApplicationContext context =
+				new ClassPathXmlApplicationContext("vid_7_beans/vid_7_beans.xml");
+			
+			Vid_7_Person person = (Vid_7_Person)context.getBean("vid_7_personBean");
+			
+			person.speak();
+			
+			((ClassPathXmlApplicationContext)context).close();
+			
+		10. Run it and make sure it works. It does! We're all set up, onward.
+		
+	
+	[ ] Vid_7_Person - modify as follows:
+	
+		-int: id
+		-String: name
+		+Vid_7_Person(): void
+		+Vid_7_Person(id:int, name:String):void
+		+speak(): void
+		+toString(): String
+		
+	Run program with sysout on person.
+	
+	[ ] vid_7_beans.xml
+	
+		- beans tab --> r-click vid_7_personBean --> "Insert <constructor-arg> element"
+		
+			- fill in "value:" textbox.
+			
+		- r-click again, add another argument for the constructor in the "value:" textbox.
+		
+		Notice how the source XML has changed:
+		
+			<bean id="vid_7_personBean" class="vid_7.Vid_7_Person">
+				<constructor-arg value="1007"></constructor-arg>
+				<constructor-arg value="Bond, James Bond"></constructor-arg>
+			</bean>
+			
+	Run program. 
+	
+	Now, back to Vid_7_beans.xml because we want to clarify and "robustify" what we've done.
+	
+	[ ] vid_7_beans.xml
+	
+		The order of the arguments listed under vid_7_personBean is how they are given
+		to the Vid_7_Person constructor. But if we don't want to rely on that order we 
+		can assign the order explicitly:
+	
+		Select the first argument "1007":
+		
+			set index to 0 	// the order of the argument to the constructor
+		
+		Select the second argument "Bond, James Bond":
+		
+			set index to 1 // the second argument to the constructor
+			
+	Run Program. Everything works.
+
+	[ ] vid_7_beans.xml
+	
+		Try switching the indexes, send the constructor the	arguments out of order, and
+		run the program.
+		
+		And admire the "BeanCreationException" that is thrown :)
+		
+		Erase the index entries for the two constructor values.
+		
+		Now put in name values:
+		
+			1007 property --> name: id
+			"Bond, James Bond" property --> name: name
+			
+			...of course these match the names you gave the parameters in Vid_7_Person's
+			constructor. 
+			
+		Run program. Works!
+		
+		Change the name of either of them to something that doesn't match constructor 
+		parameters and run. Does not work! (As we would hope).
+		
+		You can set the type, also. But clearly, as you have seen, you don't *have* to.
+		
+		The "ref:" textbox we'll learn about in the future. For now know these basics:
+		
+			- it allows "dependency injection" --> allows another bean to set the
+			value of this constructor argument. 
+			
+			
+			
+		
+VIDEO #8: Setting Bean Properties
+
+	
+	Currently we are setting properties on our Vid_7_Person bean via xml constructor
+	arguments.
+	
+	Now we'll discover how to use xml to set properties on our bean.
+	
+	[ ] Vid_7_Person - add private field and a setter for it:
+	
+		UML will now look like:
+		
+		Vid_7_Person
+		-----------------------------------------
+		-id: int
+		-name: String
+		-taxId: int
+		+Vid_7_Person()
+		+Vid_7_Person(id:int, name:String)
+		+speak(): void
+		+setTaxId(taxId: int): void
+		+toString(): String
+		
+	[ ] vid_7_beans.xml - insert property elements
+
+		In beans tab, R-click vid_7_personBean --> "insert <property> element"
+		
+			"name:" textbox --> use same name given to private field in bean,
+			ie, "taxId" in Vid_7_Person.
+			
+			"value:" textbox --> give some value, like 42.
+			
+			The XML now looks like:			
+			
+				<bean id="vid_7_personBean" class="vid_7.Vid_7_Person">
+					<constructor-arg value="1007" name="id"></constructor-arg>
+					<constructor-arg value="Bond, James Bond" name="name"></constructor-arg>
+					<property name="taxId" value="42"></property>
+				</bean>			
+			
+		
+		Rewrite toString to include taxId field.
+			
+	Run program. My result:
+	
+		Hello! I'm Bond, James Bond
+		Vid_7_Person [id=1007, name=Bond, James Bond, taxId=42]
+			
+			
+	[ ] vid_7_beans.xml - another way to set values of properties:
+	
+			<bean id="vid_7_personBean" class="vid_7.Vid_7_Person">
+				<constructor-arg value="1007" name="id"></constructor-arg>
+				<constructor-arg value="Bond, James Bond" name="name"></constructor-arg>
+				<property name="taxId">
+					
+					<value>42</value>
+				
+				</property>
+			</bean>			
+				
+		...John suggest the previous method is best because it is more straight forward
+		with fewer tags.
+		
+		
+	
+		
+VIDEO #9: Dependency Injection (DI)
+
+	Dependency Injection: like composition, the ability to "inject" one class into another.
+	
+
+	Create Address class in vid_7 package: name Vid_9_Address
+	
+		Address
+		-------------
+		-street: String
+		-zipCode: String
+		+Address(street: String, zip: int)
+		+toString(): String
+	
+	
+	Use Spring IDE in Eclipse:
+	
+	[ ] vid_7_beans.xml - add the Vid_9_Address as a bean
+	
+		Click "New Bean..." button
+		"id:" --> "vid_9_address
+		"class:" --> Vid_9_Address
+		
+		click finish.
+		
+	Run program --> ERROR! Why? Because we've not set a default constructor for Vid_9_Address
+	nor have we set constructor arguments in XML. 
+	
+	So add a no-arg constructor to Vid_9_Address...OR...add the XML constructor arguments:
+	
+	[ ] vid_7_beans.xml - add constructor arguments for the Vid_9_Address bean:
+	
+		- in bean tab R-click Vid_9_Address --> "Insert <constructor arg> element"
+		
+			"name:" 	--> street
+			"value:" 	--> 1600 Pennsylvania Avenue
+			
+		- do that again:
+		
+			"name:"		--> zipCode
+			"value:"	--> 20500
+			
+		XML source now looks like:
+		
+			<bean id="vid_9_address" class="vid_7.Vid_9_Address">
+				<constructor-arg name="street"
+					value="1600 Pennsylvania Avenue">
+				</constructor-arg>
+				<constructor-arg name="zipCode" value="20500"></constructor-arg>
+			</bean>		
+		
+	
+	[ ] Vid_7_Main
+	
+		Create Address object from XML and print to console:
+		
+			Vid_9_Address address = (Vid_9_Address)context.getBean("vid_9_address");
+		
+			System.out.println(address);
+			
+			
+	[ ] Vid_7_Person - add private field of type Vid_9_Address with setter:
+	
+		Vid_7_Person
+		-----------------------------------------
+		-address: Vid_9_Address
+		-id: int
+		-name: String
+		-taxId: int
+		+Vid_7_Person()
+		+Vid_7_Person(id:int, name:String)
+		+setAddress(address: Vid_9_Address): void
+		+speak(): void
+		+setTaxId(taxId: int): void
+		+toString(): String	
+	
+		
+		John talks a little about how a programmer could add the Address class to the 
+		Person class:
+		
+			- composition: life cycle of Address object depends on Person object.
+			               Have the constructor build an Address object.
+						   
+			- aggregate: life cycle of Address object is not directly tied to Person.
+			             Either send an Address object to the Person constructor, or,
+						 have a setAddress method to add in the Address object to the
+						 Person object.
+						 
+			John decides on using the set method technique.
+	
+			// instance field
+			private Vid_9_Address address;
+
+			// set Address object
+			public void setAddress(Vid_9_Address address) {
+				this.address = address;
+			}
+	
+	[ ] vid_7_beans.xml - add 
+	
+		beans tab, R-click vid_7_personBean --> "insert <property> element"
+		
+			"name:" 	--> address // this will look for a "setAddress" setter method.
+			"ref:"		--> type the ID of another bean, so that bean will be
+			                injected into this bean.
+							
+				To inject the address bean:
+							
+					"ref:"		--> vid_9_address
+			
+			
+		XML source now looks like:
+		
+			<bean id="vid_7_personBean" class="vid_7.Vid_7_Person">
+				<constructor-arg value="1007" name="id"></constructor-arg>
+				<constructor-arg value="Bond, James Bond" name="name"></constructor-arg>
+
+				<!-- what we did at end of video 8 -->
+				<property name="taxId">
+					<value>42</value>
+				</property>
+				
+				<!-- video 9 -->
+				<property name="address" ref="vid_9_address"></property>
+			</bean>		
+			
+	Run the program. It works!
+	
+	Summary:
+	
+		1. Create the class you want to be "injected into" the other class.
+		
+			- Create Address to be injected into Person.
+			
+		2. Create a bean entry in XML for the class to be injected.
+		
+			- create bean entry for Address.
+			
+		3. Modify Person class to have private Address instance field.
+		
+			- create instance field and setAddress() method.
+			
+		4. Modify XML bean for Person object to have an Address property.
+		
+			- set the "ref:" --> of this property to the bean ID for Address bean.
+			
+		5. Now when the program is run the Address bean will be injected into the
+		   Person bean.
+		   
+		And that's dependency injection. 
+		
+		
+		
+VIDEO #10: Bean Scope
+
+
+	[ ] Vid_7_beans.xml
+	
+		Click the vid_7_personBean.
+		In right-side pane, at the bottom, is the selector "scope:"
+		Default of "scope:" is singleton.
+		
+		What's that mean? It means if we do this:
+		
+		Vid_7_Person person1 = (Vid_7_Person)context.getBean("vid_7_personBean");
+		Vid_7_Person person2 = (Vid_7_Person)context.getBean("vid_7_personBean");
+		
+		// change person1 taxId -- value in XML is 42
+		person1.setTaxId(12345); 	
+
+		// output person2
+		System.out.println(person2);	// notice that person2's taxID was also changed!
+
+		...that's because vid_7_personBean's scope is singleton. It may look like we
+		created a second object but all we did was create a second reference to the
+		first object.
+		
+		
+		Now change the bean "scope:" to --> "prototype"
+		
+		Run the code again.
+		
+			Notice the output of person2 is 42, not 12345.
+			person1 and person2 are now distinct objects.
+			
+	Source XML - showing scope attribute:
+		
+	<bean id="vid_7_personBean" class="vid_7.Vid_7_Person"
+		scope="prototype">
+		<constructor-arg value="1007" name="id"></constructor-arg>
+		<constructor-arg value="Bond, James Bond" name="name"></constructor-arg>
+
+		<!-- video 8 -->
+		<property name="taxId" value="42"></property>
+		
+		<!-- video 9 -->
+		<property name="address" ref="vid_9_address"></property>
+	</bean>		
+	
+	
+	Note: 
+	
+		Bean scope is being changed in later videos. Don't expect above code
+		to exist in a pristine condition.
+	
+	
+VIDEO #11: Init & Destroy Methods
+
+
+	Spring Beans have a lifecycle and you can run methods after the Bean is created.
+	
+	The Vid_7_Person class' constructor is run when the "bean" is instantiated. 
+	The properties in the XML file are (?) assigned after the constructor is finished.
+	
+	So what do we do if we want to run a method AFTER the bean is completely set up?
+	We use one of the bean's lifecycle methods.
+	
+	TO DO: 
+		1) Add a method to the bean class
+		2) in XML assign method to "init-method"
+	
+	[ ] Vid_7_Person - add init-method
+
+			// the method tied to XML bean init-method
+			public void bigFluffyBunnyRabbit(){
+				System.out.println("Setup complete for: " +this);
+			}
+		
+		
+	[ ] Vid_7_beans - modify vid_7_personBean
+	
+		in "init-method" textbox --> "bigFluffyBunnyRabbit"
+		
+		
+	Source XML - showing init-method attribute:
+	
+	<bean id="vid_7_personBean" class="vid_7.Vid_7_Person"
+		scope="prototype" init-method="bigFluffyBunnyRabbit">
+		<constructor-arg value="1007" name="id"></constructor-arg>
+		<constructor-arg value="Bond, James Bond" name="name"></constructor-arg>
+
+		<!-- what we did at start of video 8: <property name="taxId" value="42"></property> -->
+
+		<!-- what we did at end of video 8 -->
+		<property name="taxId">
+			<value>42</value>
+		</property>
+		
+		<!-- video 9 -->
+		<property name="address" ref="vid_9_address"></property>
+	</bean>	
+	
+	
+	Run program. Admire how init-method is called after bean creation.
+	
+	TO DO: now create a destroy-method to be run when bean is destroyed.
+	
+	[ ] Vid_7_Person - add destroy-method
+	
+		// the method tied to XML bean destroy-method
+		public void allThingsMustDie(){
+			System.out.println("Fade to black...");
+		}		
+		
+	[ ] Vid_7_beans - modify vid_7_personBean
+	
+		in "destroy-method:" textbox --> allThingsMustDie
+		
+		
+	BIG NOTE:
+	
+		If the bean scope is set to "prototype" then, as John amusingly says, "Spring
+		just hands you your beans and then it says, 'Well, here's a bean for you, do
+		what you want with it,' and it kind of washes its hands of the bean..."
+		
+		Beans with scope set to prototype do not automatically run destroy-methods; they
+		will run the set up methods.
+		
+		If bean scope is set to singleton the destroy-method is automatically called
+		after we close the context object:
+		
+			((ClassPathXmlApplicationContext)context).close(); 
+			
+		??? How to close a bean with prototype scope?
+		-- A bit of research does not divvy up an easy solution.
+		
+			How about run whatever methods you want when you want to put the bean
+			in a pre-close state and then assign "null" to the bean's reference?
+		
+	
+	Global Methods:
+	
+		You can also define methods for entire Spring Bean Configuration File, the XML
+		file that holds the beans.
+		
+	[ ] vid_7_beans.xml - create default methods
+	
+		Beans tab, click on root "beans" and notice the methods in the right pane.
+		
+		"default-destroy-method:" 	--> "zombie" 	// method name
+		"default-init-method:"		--> "rick"		// method name
+		
+	Source XML - note the attribues set on the <beans> element:
+	
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+	http://www.springframework.org/schema/beans/spring-beans.xsd"
+	default-destroy-method="zombie" default-init-method="rick">
+
+	<bean id="1"....>
+	<bean id="2"....>
+	...etc.
+
+</beans>	
+
+
+	...now you can add the "zombie" or "rick" methods to the .java files that are the beans.
+	
+	[ ] vid_9_Address - add default-destroy-method
+	
+		// XML default-destroy-method
+		public void zombie(){
+			System.out.println("XML Default Destroy Method called.");
+		}
+		
+	Run program. It works!
+	
+	Note:
+	
+		If the default-init-method & default-destroy-method are set in the 
+		Spring_Bean_Configuration_File.xml the "Bean.java" classes don't have
+		to implement them; no error will be thrown if the .java files are 
+		missing those methods.
+	
+	
+	
+
+VIDEO #12: Factory-Bean & Factory-Method
+
+	The basic idea here: if you define a factory method in your .java class that makes
+	objects of itself, like:
+	
+		public static Vid_7_Person getInstance(){
+		
+			return new Vid_7_Person();
+		}
+		
+	then you can instruct a Spring Bean Configuration File bean (vid_7_beans.xml) to use
+	this factory method by filling in the well-named texbox "factory-method:" with the name
+	of the factory method.
+	
+	
+	[ ] Vid_7_Person - add factory method
+	
+		public static Vid_7_Person getInstance(){
+			System.out.println("Person factory method called.");
+			
+			// invoke Person's two-argument constructor
+			return new Vid_7_Person(454, "Santa Big Block");
+		}
+	
+	
+	[ ] vid_7_beans.xml - add "getInstance" to factory-method textbox
+	
+		"factory-method:" --> getInstance
+		
+		
+	Run program. ERROR!
+	
+		"No matching factory method found: factory method 'getInstance(String,String)'.
+		Check that a method with the specified name and arguments exists and that it
+		is static."
+		
+		...this occurs because we have <contructor-arg> elements in the Person bean.
+		By having these the XML wants to see the factory method accepting the 
+		constructor arguments.
+		
+			If you temporarily cut the <constructor-arg> elements and run the program
+			it will work fine. 
+			
+			Restore the <constructor-arg> elements.
+			
+	[ ] Vid_7_Person - add arguments to the factory method.
+	
+	
+			public static Vid_7_Person getInstance(int id, String name){
+				System.out.println("Person factory method called.");
+				
+				// call Person's 2 arg constructor
+				return new Vid_7_Person(int, name);
+			}	
+	
+	Run program. All good!
+	
+	
+	[ ] vid_7_beans.xml 
+	
+		- Copy person bean and paste, give it a new id: person2 or something.
+		
+		My XML source now has this:
+		
+			<!-- VIDEO 12 -->	
+			<!-- Person Bean #2 -->
+			<bean id="person2" class="vid_7.Vid_7_Person" scope="singleton"
+				init-method="bigFluffyBunnyRabbit" destroy-method="allThingsMustDie"
+				factory-method="getInstance">
+				
+				<constructor-arg value="987654321" name="id" type="int"></constructor-arg>
+				<constructor-arg value="Backward Bob" name="name"></constructor-arg> 
+				
+				<property name="taxId" value="11"></property>
+				<property name="address" ref="vid_9_address"></property>
+			</bean>		
+			
+		
+	Run program. John's video console output and my console output caused some serious
+	moments of confusion. Through trying to figure out why I was seeing what I was seeing
+	here is what I learned:
+	
+		
+		When you do:
+		
+			ApplicationContext context = 
+				new ClassPathXmlApplicationContext("vid_7_beans/vid_7_beans.xml");
+	
+		
+		...EVERY BEAN defined in that Spring Bean Configuration File is created.
+		
+		When we do this:
+		
+			Vid_7_Person person1 = (Vid_7_Person)context.getBean("vid_7_personBean");
+			
+			
+			...we are NOT creating the bean with the ID given as an argument. We are
+			getting an ALREADY-CREATED-BEAN that has that ID.
+			
+				...unless prototype scope is set on the bean. If prototype scope is
+				set on the bean the bean WILL NOT BE created when the ApplicationContext
+				is created. In this case, the "getBean()" method will instantiate the 
+				bean.
+				
+		One thing you might try is this:
+		
+			In Vid_7_Main try commenting out ALL the code EXCEPT for the Application
+			context creation. 
+			
+			Now run the program. 
+			
+			See how that creates the beans that have singleton scope? 
+			
+			Okay, now change the scope of the beans to prototype. 
+			
+			Now notice that there is no console output from our Person class, not until 
+			we instantiate a Person object via the getBean method.
+			
+			
+			
+	...I'm glad I worked through that because that was awesomely frustrating for a short
+	minute there, not knowing how the bean with "person2" id was being created when none 
+	of my code apparently asked for it to be created. 
+			
+			
+	
+	Okay, next part of the tutorial: creating a factory class.
+	
+	[ ] PersonFactory - create that in vid_7 package.
+			
+		PersonFactory
+		--------------		
+		+createPerson(id: int, name: String): Vid_7_Person
+		
+		
+	[ ] vid_7_beans.xml
+	
+		for person2 bean:
+		
+			"factory-bean:"		--> "personFactory"
+			"factory-method:" 	--> "createPerson"			
+			
+			
+		Now create a bean for the PersonFactory class:
+		
+			Click "New Bean..." button
+			
+			"Id:" 		--> personFactory
+			"Class:"	--> PersonFactory
+			
+		
+		What's going on?
+		
+			We are saying person2 bean should use the "factory-bean:" named 'personFactory'.
+			
+			Of course, we have to create the 'personFactory' bean for the PersonFactory class.
+			
+			Now person2 will use the personFactory bean, the personFactory bean has to
+			have a "createPerson" method because we said the person2 bean has the
+			following xml attribute:
+			
+				factory-method="createPerson"
+			
+			
+	Run program. It works!
+	
+	Summary:
+	
+		There are two ways to use factories to instantiate your beans:
+		
+			1) In code put a static factory method in the java class that returns
+			   the class type.
+			   
+			   In xml tell the bean to use that static method via "factory-method:".
+			   
+					See vid_7_personBean has attribute "factory-method:" set to
+					"getInstance" - a static method in the Vid_7_Person class.
+			   
+			   
+			2) In code create a Factory class that has a non-static method for creating
+			   and returning a class object. 
+			   
+			   In xml create a bean for this factory class. Give it an ID.
+			   
+					- You now have a <bean> element that is a factory.
+					
+					See personFactory <bean> element.
+			   
+			   Then whatever bean you want to use this factory class it needs to
+			   
+				A) reference the factory bean ID in "factory-bean:" textbox
+				
+					See person@ bean has attribute "factory-bean" set to "personFactory"
+				
+				B) reference the method used in the .java class that performs the factory
+				   work, in "factory-method:" textbox.
+				   
+						See person2 bean has attribute "factory-method" set to
+						"createPerson" -- the method in Factory class that performs
+						object creation.				   
+				   
+				   
+
+VIDEO #13: The P Namespace
+
+	The P namespace is a way to set properties on beans.
+	
+	Currently the Vid_9_Address bean is setting its bean fields via its constructor.
+	What we would like to do is use the bean class' getter and setter methods to
+	set the fields (aka properties). 
+	
+	For this video I am creating a new bean class: Vid_13_Address.
+	
+	Create Vid_13_Address bean and hook it up in vid_7_beans.xml.
+	
+		R-click vid_7 package and add Vid_13_Address class.
+		
+		Vid_13_Address
+		------------------
+		-street: String
+		-zipCode: String
+		+Vid_13_Address()
+		+Vid_13_Address(street: String, zipCode: String)
+		+toString(): String
+		+zombie(): void		// the XML default-destroy-method
+		+getStreet(): String
+		+setStreet(street: String): void
+		+getZipCode(): String
+		+setZipCode(zip: String): void
+		
+		
+		In vid_7_beans.xml:
+		
+			<bean id="address2" class="vid_7.Vid_13_Address">
+			</bean>
+	
+		
+	[ ] Vid_7_Main
+	
+		Get handle to address2 bean:
+		
+			Vid_13_Address address2 = (Vid_13_Address)context.getBean("address2");
+			
+	
+	RUN PROGRAM. Works. Fields are null, of course.
+	
+	
+	To set the properties -- I think I should start to get used to using the word 
+	"properties" instead of "fields." 
+	
+	To set the properties of Vid_13_Address we could:
+	
+		A) Use the <constructor-arg> element in vid_7_beans.xml.
+		
+		B) Use a <property> element in vid_7_beans.xml because we have the appropriate
+		   setters for the properties.
+		   
+		OR, and what this video is about:
+		
+		C) Use P namespaces.
+		
+			Go to the "Namespaces" tab in vid_7_beans.xml.
+			
+			Select the checkbox with the "P" (a 'P' with a circle around it).
+			
+			Notice the XML source code, this was added at the top:
+			
+				xmlns:p="http://www.springframework.org/schema/p"
+				
+				...that is the "P namespace"
+				
+			Now we can add attributes to our <bean> elements using "p:"
+			
+			Like this:
+			
+				<bean id="address2" class="vid_7.Vid_13_Address"
+					p:street="Vid 13 Address Bean"
+					p:zipCode="420069">
+				</bean>
+				
+				
+	RUN PROGRAM. It works!
+			
+			
+			
+			
+			
+			
+		
+		
+			
+			
+		
+			
+		
+	

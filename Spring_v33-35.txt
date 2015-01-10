@@ -1,0 +1,288 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for videos 33 through 35
+
+Video #33: Spring Expression Language (SPEL)
+Video #34: SPEL & Annotations
+Video #35: Useful SPEL Operators
+
+Video 33 code: Spring_tut_11
+Video 34 code: Spring_tut_11
+Video 35 code: Spring_tut_11
+
+
+VIDEO #33: S.P.E.L. - Spring Expression Language
+
+	Copying Spring_tut_10 code and pasting to become Spring_tut_11.
+	
+	Do all the necessary refactoring of class names and whathaveyou.
+	
+	Add:
+	
+	[ ] Vid_33_RandomText.java in vid_33 package
+	
+		Vid_33_RandomText
+		-------------------
+		-texts: String[]
+		+getText(): String
+	
+	[ ] vid_33_beans.xml
+	
+		<bean id="robot" class="vid_33.Vid_33_Robot"></bean>
+		
+		<bean id="randomText" class="vid_33.Vid_33_RandomText"></bean>
+		
+	Now we appear to be all set up for this tutorial.
+	
+	Add properties:
+	
+	[ ] vid_33_beans.xml
+	
+		beans tab, R-click robot, beans --> insert <property> element:
+		
+			"name:" 		--> id		// property identifier
+			"value:"		--> 1234
+			
+		Add another property:
+		
+			"name:"			--> speech
+			"value:"		--> I am a robot.
+			
+		save.
+		
+		XML source:
+		
+			<bean id="robot" class="vid_33.Vid_33_Robot">
+				<property name="id" value="1234"></property>
+				<property name="speech" value="I am a robot."></property>
+			</bean>
+
+			<bean id="randomText" class="vid_33.Vid_33_RandomText"></bean>		
+		
+	RUN PROGRAM. Works.
+	
+	Now some baby steps to SPEL:
+	
+	[ ] vid_33_beans.xml
+	
+		XML source: use #{} 
+		
+			<bean id="robot" class="vid_33.Vid_33_Robot">
+				<property name="id" value="#{777}"></property>
+				<property name="speech" value="#{'My name is: ' +'T1000'}"></property>
+			</bean>		
+			
+	RUN PROGRAM. It works.
+	
+	That's a very simplified way to use SPEL. 
+	
+	Here's how to use a method in another bean:
+	
+	[ ] vid_33_beans.xml --> make one bean use another bean's method
+	
+		<bean id="robot" class="vid_33.Vid_33_Robot">
+			<property name="id" value="#{777}"></property>
+			<property name="speech" value="#{randomText.getText()}"></property>
+		</bean>
+
+		<bean id="randomText" class="vid_33.Vid_33_RandomText"></bean>		
+	
+		...pretty straight forward.
+		
+		Note, you can also do:
+		
+		
+			<bean id="robot" class="vid_33.Vid_33_Robot">
+				<property name="id" value="#{777}"></property>
+				<property name="speech" value="#{randomText.text}"></property>
+			</bean>
+
+			<bean id="randomText" class="vid_33.Vid_33_RandomText"></bean>	
+
+
+			...the SPEL looks like #{randomText.text}...why does that work?
+			
+			Because "randomText.text" looks like we intend to access a property called
+			"text" and the way expression language works is it accesses properties 
+			through the "setter" and "getter" methods. So by telling SPEL we want
+			the "text" property it will look for a "getText()" method. 
+			
+			Notice, of course, that we DO NOT HAVE a "text" property in the 
+			Vid_33_RandomText class -- but Spring doesn't know that, all it looks for
+			is a get/set method with an appropriate name. 
+			
+			So when we write #{randomText.text} the getText() method is called.
+			
+			Hopefully that makes sense.
+			
+	RUN PROGRAM. It works.
+	
+	Now try:
+	
+	[ ] vid_33_beans.xml
+	
+		
+		<bean id="robot" class="vid_33.Vid_33_Robot">
+			<property name="id" value="#{randomText.text.length()}"></property>
+			<property name="speech" value="#{randomText.text}"></property>
+		</bean>
+
+		<bean id="randomText" class="vid_33.Vid_33_RandomText"></bean>			
+			
+		
+			...but do note that a new Random is generated each time getText is invoked, so
+			the reported length in ID may not match the characer length in SPEECH.
+		
+		
+		What if getText() returned null? Then you can do this:
+		
+			<bean id="robot" class="vid_33.Vid_33_Robot">
+				<property name="id" value="#{randomText.text?.length()}"></property>
+				<property name="speech" value="#{randomText.text}"></property>
+			</bean>
+			
+				...the randomText.text? <-- the "?" mark says "if what comes before
+				returns null, don't crash" :)
+				
+				"?" in the case above might be called the "safe navigation operator"?
+				
+				
+	RUN PROGRAM. Works.
+	
+	
+	
+VIDEO #34: SPEL & Annotations
+		
+	Goal: like previous video, take values from one bean and inject them into another.
+	
+		Tutorial set up:
+		
+			[ ] vid_33_beans.xml
+			
+				- comment out the beans from the previous video.
+				
+			[ ] Vid_33_Main
+			
+				change the argument to getBean() from "robot" to "vid_33_Robot"
+	
+	
+	To accomplish this:
+	
+		[ ] vid_33_beans.xml
+		
+			Namespaces tab --> make sure 'context' checkbox is selected.
+			
+			context tab --> R-click bean --> insert <context:component-scan>
+			
+				base-package: vid_33		// where my beans are stored
+			
+		
+		[ ] Vid_33_Robot & Vid_33_RandomText
+		
+			ensure @Component is above the class declaration.
+			
+			
+		[ ] Vid_33_Robot
+		
+			Add @Autowired above setter methods.
+			Add @Value
+			
+			Like so:
+			
+				@Autowired
+				@Value("1234")
+				public void setId(String id) {
+					this.id = id;
+				}
+
+				@Autowired
+				@Value("Big dogs")
+				public void setSpeech(String speech) {
+					this.speech = speech;
+				}		
+		
+		
+	RUN PROGRAM. It works.
+	
+	Now use SPEL:
+	
+	[ ] Vid_33_Robot
+	
+		@Autowired
+		@Value("#{vid_33_RandomText.getText()?.length()}")
+		public void setId(String id) {
+			this.id = id;
+		}
+
+		@Autowired
+		@Value("#{vid_33_RandomText.getText()}")
+		public void setSpeech(String speech) {
+			this.speech = speech;
+		}	
+		
+		...notice if you do not give a name to the @Component("someName") then the default
+		is the first letter of the class name in lowercase.
+		
+		ALSO,
+			Where to put @Value()? If your method has only one parameter it can go where I
+			have put it or where John is putting it in the videos, ie, in the argument
+			list.
+			
+			If, however, there are >1 parameters then put the @Value IN the parameter list,
+			just prior to the parameter you want the @Value to inject into.
+		
+	RUN PROGRAM. Works.
+	
+	
+	
+VIDEO #35: Useful SPEL Operators
+		
+		
+	// use the new operator inside SPEL:
+	
+			@Autowired
+			@Value("#{new java.util.Date().toString()}")
+			public void setSpeech(String speech) {
+				this.speech = speech;
+			}		
+	
+	// access a static method or field in SPEL:
+	
+		Can't do this:
+		
+			@Autowired
+			@Value("#{Math.PI}")
+			public void setSpeech(String speech) {
+				this.speech = speech;
+			}		
+			
+		Do this instead --> use the T operator
+		
+			@Autowired
+			@Value("#{T(Math).PI}")
+			public void setSpeech(String speech) {
+				this.speech = speech;
+			}		
+			
+			
+	// A bunch more that all ran:
+	
+		@Autowired
+		// @Value("#{vid_33_RandomText.getText()}")
+		// @Value("#{new java.util.Date().toString()}")
+		// @Value("#{T(Math).PI}")
+		// @Value("#{T(Math).max(3, 5)}")
+		// @Value("#{T(Math).max(T(Math).PI, 2.5)}")
+		// Equality operators: < lt....gt >....<= le....>= ge....= eq
+		// @Value("#{T(Math).max(T(Math).PI, 2.5) gt 1}")	// true
+		// @Value("#{'my dog'.equals('my dog')}")			// true
+		 @Value("#{5 ge 3 ? '5 is >= 3' : '5 is < 3'}")
+		public void setSpeech(String speech) {
+			this.speech = speech;
+		}	
+		
+THE END.
+		
+			

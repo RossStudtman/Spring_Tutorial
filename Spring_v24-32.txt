@@ -1,0 +1,819 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for videos 24 through 32
+
+Video #24: Support for Spring Annotations
+Video #25: @Autowired Annotation
+Video #26: @Autowired(required=true/false)
+Video #27: Reducing Ambiguity via @Qualifier
+#################################################
+Notes: Summary of techniques to reduce ambiguity.
+#################################################
+Video #28: Resource Annotation (JSR 250)
+Video #29: Annotation-Based Init & Destroy Methods
+Video #30: Inject Annotation
+Video #31: Automatic Bean Discovery
+Video #32: Setting Property Values via Annotations
+
+
+
+Video 24 code: Spring_tut_8
+Video 25 code: Spring_tut_8
+Video 26 code: Spring_tut_8
+Video 27 code: Spring_tut_8
+
+Note: there are significant alterations to code during the progression of these videos.
+So I tried to comment out the changes where I could so they'd be noticeable.
+
+Video 28 code: Spring_tut_9
+Video 29 code: Spring_tut_9
+Video 30 code: Spring_tut_9
+Video 31 code: Spring_tut_9
+Video 32 code: Spring_tut_10
+
+
+VIDEO #24: Support for Spring Annotations
+
+
+	Setting up a new project. It is basically the code as was left at the end
+	of video #23. So this time I'm simply copying the whole project in Eclipse, R-click,
+	copy --> and paste. Then change the name of the project to Spring_tut_8. And 
+	refactor (R-click, refactor) the package and class names to reflect that this is video 24.
+	
+	Then change vid_24_beans.xml to reflect what John has at about the 60 second mark of
+	this video:
+
+	Spring Bean Configuration File - xml source, vid_24_beans.xml now looks like:
+	
+		<?xml version="1.0" encoding="UTF-8"?>
+		<beans xmlns="http://www.springframework.org/schema/beans"
+			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			xsi:schemaLocation="...truncated for notes...">
+
+			<!-- Vid 24 -->
+			<bean id="logger" class="vid_24.Vid_24_Logger"></bean>
+
+			<bean id="consoleWriter" class="vid_24.Vid_24_ConsoleWriter"
+				primary="true"></bean>
+
+			<bean id="fileWriter" class="vid_24.Vid_24_FileWriter"></bean>
+
+		</beans>
+		
+	RUN PROGRAM. Error! NullPointException...because we haven't told the xml to perform 
+	injection of Vid_24_Logger's dependencies: Vid_24_ConsoleWriter & Vid_24_FileWriter.
+	
+	Annotations can perform these injections.
+	
+	Lets set up our project to be able to use annotations.
+	
+	[ ] vid_24_beans.xml
+	
+		Namespaces tab, select the "Context" checkbox.
+		
+		Look at the xml source and see the added name space:
+		
+			xmlns:context="http://www.springframework.org/schema/context"
+			
+		Select context tab, root node, R-click, insert <context:annotation-config> element.
+		
+		XML source has the following element added to it:
+		
+			<context:annotation-config></context:annotation-config>
+			
+	
+	RUN PROGRAM. :) Of course Error! We haven't done any injections yet :)
+	
+	
+	
+VIDEO #25: @AutoWired
+		
+	Goal: Wire Vid_24_ConsoleWriter & Vid_24_FileWriter into Vid_24_Logger.
+	
+	[ ] Vid_24_Logger
+	
+		Put @Autowired annotation above appropriate methods in Vid_24_Logger:
+	
+			@Autowired
+			public void setConsoleWriter(Vid_24_ConsoleWriter consoleWriter) {
+				this.consoleWriter = consoleWriter;
+			}
+			
+			@Autowired
+			public void setFileWriter(Vid_24_FileWriter fileWriter) {
+				this.fileWriter = fileWriter;
+			}	
+
+	RUN PROGRAM. It works! 
+	
+		The @Autowired annotation works by using <bean> types. 
+		
+		You can also do this with the properties:
+		
+			@Autowired
+			private Vid_24_ConsoleWriter consoleWriter;
+			
+			@Autowired
+			private Vid_24_FileWriter fileWriter;		
+	
+	
+			...as long as there is no ambiguity it'll work. What you don't want:
+				Do NOT have several <bean> elements that could match property types.
+			
+	RUN PROGRAM. Works.
+	
+		You can also do this with a constructor:
+		
+			@Autowired
+			public Vid_24_Logger(Vid_24_ConsoleWriter consoleWriter, 
+				Vid_24_FileWriter fileWriter) {
+				
+				this.consoleWriter = consoleWriter;
+				this.fileWriter = fileWriter;
+			}		
+			
+	RUN PROGRAM. It works.
+	
+		You could also mix autowiring the constructor and a property. Here the constructor
+		only expects one of the properties:
+		
+			@Autowired
+			public Vid_24_Logger(Vid_24_ConsoleWriter consoleWriter) {
+				
+				this.consoleWriter = consoleWriter;
+			}			
+		
+			@Autowired
+			public void setFileWriter(Vid_24_FileWriter fileWriter) {
+				this.fileWriter = fileWriter;
+			}				
+			
+		
+	RUN PROGRAM. It works.
+	
+	This next one is **crazy**:
+	
+		If you @Autowire the properties you don't even need a constructor OR setter
+		methods! The Vid_24_Logger class could look like this and run just fine:
+		
+			public class Vid_24_Logger {
+
+				@Autowired
+				private Vid_24_ConsoleWriter consoleWriter;
+				
+				@Autowired
+				private Vid_24_FileWriter fileWriter;
+				
+				public void writeFile(String text){
+					fileWriter.write(text);
+				}
+				
+				public void writeConsole(String text){
+					consoleWriter.write(text);
+				}	
+			}
+			
+	RUN PROGRAM. It works. Even with private properties. 
+	(I'm undoing those changes above; it won't be seen in the code.)
+		
+	
+	
+VIDEO #26: The 'Required' Attribute of Autowired Annotation
+
+	
+	Learning task: @Autowired(required=false) --> says the xml does not have to have this
+	bean on hand, ie, it won't throw an error if it cannot find the bean.
+	
+	[ ] Vid_24_Logger --> lesson set up
+	
+		At the beginning of the lesson the @Autowired annotation is above the set methods.
+		
+		Comment out the constructor (John doesn't have one in the video).
+	
+		Change writeConsole method to check for ConsoleWriter property being null:
+		
+			public void writeConsole(String text){
+				if(consoleWriter != null){
+					consoleWriter.write(text);
+				}		
+			}		
+			
+	RUN PROGRAM. Works.
+			
+	Try this: 
+	
+	[ ] vid_24_beans.xml -- comment out the ConsoleWriter <bean> element:
+	
+		<!--  
+			<bean id="consoleWriter" class="vid_24.Vid_24_ConsoleWriter"
+				primary="true"></bean>
+		-->	
+	
+	RUN PROGRAM. Error! BeanCreationException thrown...as we would expect.
+	
+	But now do this:
+
+	[ ] Vid_24_Logger:
+	
+		@Autowired(required=false)
+		public void setConsoleWriter(Vid_24_ConsoleWriter consoleWriter) {
+			this.consoleWriter = consoleWriter;
+		}		
+		
+	RUN PROGRAM. It works!
+	
+	Summary:
+	
+		Optional beans:
+	
+		If you want to autowire a <bean> into another <bean> but don't want Spring to 
+		complain if the bean IS NOT PRESENT, then use @Autowire(required=false) annotation.
+		
+		
+VIDEO #27: @Qualifier("tag_name") to decrease ambiguity
+			
+			
+	Using @Qualifier to decrease ambiguity.
+	
+	[ ] vid_24_beans.xml
+	
+		Make another Vid_24_ConsoleWriter <bean>:
+		
+			<bean id="consoleWriter" class="vid_24.Vid_24_ConsoleWriter"></bean>
+			
+			<bean id="vid27" class="vid_24.Vid_24_ConsoleWriter"></bean>		
+	
+	
+	[ ] Vid_24_Logger
+	
+		- Remove @Autowired(required-false) so it just says @Autowired.
+		
+	RUN PROGRAM. Hmmmm! John's video received an error, mine did not!
+		
+		- John notes, "The weird thing is I sometimes find it seems to work with two
+		  possible matches." So I am experiencing that weird thing right now. 
+		  I strongly suspect Spring has autowired the <bean> that has the same name as 
+		  the property - ie, defaulted to autowiring by name?
+		  
+		  To test this I changed the name of the <bean> with ID "consoleWriter" to
+		  "consoleWriter2" --> result: The error John received in the video.
+		  
+	At any rate, we can decrease ambiguity via the following, using a qualifier:
+	
+	[ ] vid_24_bean.xml -- add qualifier to <bean> with ID of consoleWriterTEST
+	
+		beans tab, R-click consoleWriterTEST, beans, insert <qualifier>:
+		
+			"value:" --> "fluffyBunny" 	// whatever you like
+			
+		XML source:
+		
+			<bean id="consoleWriterTEST" class="vid_24.Vid_24_ConsoleWriter">
+				<qualifier value="fluffyBunny"></qualifier>
+			</bean>
+
+			<bean id="vid27" class="vid_24.Vid_24_ConsoleWriter"></bean>	
+
+
+	[ ] Vid_24_Logger -- add Qualifier annotation:
+	
+		@Autowired
+		@Qualifier("fluffyBunny")
+		public void setConsoleWriter(Vid_24_ConsoleWriter consoleWriter) {
+			this.consoleWriter = consoleWriter;
+		}	
+	
+	RUN PROGRAM. It works!
+	
+	You can also flag a Class with the @Qualifier annotation and use that to tell Spring
+	which <bean> to select.
+	
+	To demonstrate this:
+	
+		[ ] Vid_24_Logger
+		
+			- Change the FileWriter property to the LogWriter type.
+			- And change the set method's argument to the LogWriter type:
+			
+				@Autowired
+				public void setFileWriter(Vid_24_LogWriter fileWriter) {
+					this.fileWriter = fileWriter;
+				}
+				
+				
+		...having done this now the vid_24_beans.xml has THREE <bean> elements that could
+		satisfy the Vid_24_LogWriter argument because all three beans implement the 
+		Vid_24_LogWriter interface, ie, ambiguity now exists.
+		
+	RUN PROGRAM. Hmmm, doesn't fail like it should with the ambiguity. Ah, Spring is doing
+	like above, it is selecting by name. Okay, 
+	
+	[ ] vid_24_beans.xml
+	
+		- change FileWriter <bean> element to have ID of fileWriterTEST.
+		
+	RUN PROGRAM. Error! Good. It says "...expected a single matching bean but found
+	3: consoleWriterTEST, vid27, fileWriterTEST"
+	
+	What we can do --> give the Vid_24_FileWriter class an annotation:
+	
+	[ ] Vid_24_FileWriter
+	
+			package vid_24;
+
+			import org.springframework.beans.factory.annotation.Qualifier;
+
+			@Qualifier("tigerMonkey")
+			public class Vid_24_FileWriter implements Vid_24_LogWriter{
+				public void write(String text) {
+					System.out.println("fw pretending to write to file: " + text);		
+				}
+			}		
+		
+		
+	And then:
+	
+	[ ] Vid_24_Logger --> add @Qualifier annotation:
+	
+			@Autowired
+			@Qualifier("tigerMonkey")
+			public void setFileWriter(Vid_24_LogWriter fileWriter) {
+				this.fileWriter = fileWriter;
+			}	
+			
+	RUN PROGRAM. It works!
+	
+	Summary:
+	
+		If you have mulitple <bean> elements in XML that could be injected into a property
+		then you can explicitly tell Spring which class you want wired in by using the
+		@Qualifier("your_tag") on the Class. Then, in the class that is dependent on that 
+		class use the @Qualifier("your_tag") -- with the same tag, of course -- on the
+		setMethod() for that property.
+		
+	
+	
+################################################################################
+NOTES: Techniques to reduce ambiguity.
+
+
+We have now learned several techniques for ameliorating ambiguous <bean> elements:
+
+	- XML: use "byName"
+
+	- XML: supply a comma separated list to default-autowire-candidates
+
+	- XML: autowire-candidate set to "false"
+
+	- XML: primary attribute set to "true"
+
+	- XML: qualifier attribute: qualifier value="fluffyBunny"; in class with 
+	dependencies use @Qualifier("fluffyBunny") annotation above setMethod()
+	for property.
+
+	- @Qualifier annotation used on class to be injected, above class 
+	declaration: @Qualifer("badMonkey"); and in class with dependencies 
+	use @Qualifier("badMonkey") annotation above setMthod() for property.
+################################################################################	
+	
+
+VIDEO #28: Resource Annotation (JSR 250)
+
+
+	This is an alternative to autowiring. 
+	
+	Copying the last project, Spring_tut_8, and pasting as Spring_tut_9.
+	
+	Change names of packages and files. And pom.xml entries.
+	
+	Remove annotations from Vid_28_Logger.
+	
+	Make sure names and classes in vid_28_beans.xml reflect vid 28, not vid 24.
+	
+	RUN PROGRAM. Error, as there should be. No injections have been performed yet.
+	
+
+	[ ] Vid_28_Logger
+	
+		use the @Resource annotation above setter methods:
+		
+		Uh oh. I typed @Resource and Eclipse isn't finding an autocomplete to import.
+		
+			So, I typed by hand the import:
+		
+				import javax.annotation.Resource;
+			
+				Receiving this warning:
+				
+				"Access restriction: The type 'Resource' is not API 
+				(restriction on required library 'C:\Program Files\Java\jre8\lib\rt.jar')"
+				
+				...not sure what that is about.
+			
+		The @Resource annotation goes here:
+		
+			@Resource(name="consoleWriterTEST")
+			public void setConsoleWriter(Vid_28_ConsoleWriter consoleWriter) {
+				this.consoleWriter = consoleWriter;
+			}
+
+			@Resource(name="fileWriterTEST")
+			public void setFileWriter(Vid_28_LogWriter fileWriter) {
+				this.fileWriter = fileWriter;
+			}
+			
+			...@Resource(name="ID_of_bean_element_here")
+			
+	RUN PROGRAM. It works.
+	
+	Extra notes:
+	
+		The import thing was bugging me. This is what I discovered and it fixed the
+		issue:
+		
+		http://stackoverflow.com/questions/860187/access-restriction-on-class-due
+		-to-restriction-on-required-library-rt-jar
+		
+		Technique to fix:
+		
+			R-click project, Build Path, Configure Build Path, Libraries tab, 
+			remove the JRE System Library, then add libarary, 
+			and re-add the JRE System Libarary.
+
+			After I did that the warnings went away. 
+			And, then I deleted the annotations and the import and typed in 
+			@Resources and Eclipse performed the auto import this time with
+			ctrl-shift-o
+			
+	
+VIDEO #29: Annotation Init & Destroy Methods
+
+
+	Remember video 11's Init & Destroy methods? Here's a brief summary:
+	
+		[ ] Vid_7_Person - add init-method
+
+			// the method tied to XML bean init-method
+			public void bigFluffyBunnyRabbit(){
+				System.out.println("Setup complete for: " +this);
+			}			
+			
+		[ ] Vid_7_beans - modify vid_7_personBean
+		
+			in "init-method" textbox --> "bigFluffyBunnyRabbit"
+			
+			
+		Source XML - showing init-method attribute:
+		
+		<bean id="vid_7_personBean" class="vid_7.Vid_7_Person"
+			scope="prototype" init-method="bigFluffyBunnyRabbit">	
+
+
+	We'll now do that with annotations.
+	
+	[ ] Vid_28_Logger
+	
+		Add these:
+		
+			@PostConstruct
+			public void initMeBaby(){
+				sysout("Vid 28 Logger initialiazation activities here.");
+			}
+			
+			@PreDestroy
+			public void destoryMeBaby(){
+				sysout("Vid 28 Logger destruction activities here.");
+			}
+	
+	RUN PROGRAM. It works!
+	
+	REMEMBER!
+	
+		If the <bean> scope is set to "prototype" then Spring has nothing to do with
+		the <bean> element after it is created. But if it is set to "singleton" then 
+		Spring will manage the bean's lifecycle.
+		
+
+		
+VIDEO #30: Inject Annotation --> JSR 330
+	
+	This is another alternative technique for performing injections.
+	This is the "JSR 330" technique.
+	
+	"@Inject" isn't part of the standard JDK so Eclipse will not autocomplete it.
+	
+		Do this:
+		
+		pom.xml --> dependencies --> add "javax.inject" --> select the javax.inject jar.
+		
+		click OK.
+		
+		BUMMER MAN, the auto search isn't working again. Oh, wait, there it goes, my
+		internet connection must have been crappy -- it took about 2 minutes for the
+		box to populate with searches (and there's nothing in the GUI to indicate the
+		search is taking place).
+		
+		R-click project --> Maven --> Update Project
+		
+		Now try using @Inject...not working...oh, oops.
+		I added the jar to Spring_tut_8... okay, fixing.
+		
+		Fixed. I can now use @Inject and import what needs importing.
+		
+	[ ] Vid_28_Logger
+	
+		// commented out for video 30: @Resource(name="consoleWriterTEST")
+		@Inject
+		public void setConsoleWriter(Vid_28_ConsoleWriter consoleWriter) {
+			this.consoleWriter = consoleWriter;
+		}
+
+		// commented out for video 30: @Resource(name="fileWriterTEST")
+		@Inject
+		public void setFileWriter(Vid_28_LogWriter fileWriter) {
+			this.fileWriter = fileWriter;
+		}		
+		
+	RUN PROGRAM. Error. NoUniqueBeanException: "No qualifying bean of type 
+	[vid_28.Vid_28_LogWriter] is defined: expected single bean but found 3:
+	consoleWriterTEST, vid27, fileWriterTEST"
+	
+	To fix that, do this:
+	
+	[ ] Vid_28_Logger
+	
+	
+		// commented out for video 30: @Resource(name="consoleWriterTEST")
+		@Inject
+		@Named(value="consoleWriterTEST")
+		public void setConsoleWriter(Vid_28_ConsoleWriter consoleWriter) {
+			this.consoleWriter = consoleWriter;
+		}
+
+		// commented out for video 30: @Resource(name="fileWriterTEST")
+		@Inject
+		@Named(value="fileWriterTEST")
+		public void setFileWriter(Vid_28_LogWriter fileWriter) {
+			this.fileWriter = fileWriter;
+		}	
+	
+	
+		...the @Name value is the ID of the <bean> element you want to inject.
+		
+		
+	Summary:
+	
+		There are 3 ways to perform injections:
+		
+			Spring way: Auto wire stuff.
+			JSR 250 way: @Resource
+			JSR 330 way: @Inject
+	
+	
+		
+VIDEO #31: Automatic Bean Discovery
+
+
+	Can we do the bean definitions with annotations instead of using XML? Yes.
+	Mostly, anyway, you still have to fiddle with the Spring Bean Configuration File:
+	
+	[ ] vid_28_beans.xml
+	
+		- comment out all the beans.
+		
+		Next:
+		
+		context tab, R-click beans, insert <context:component-scan> element:
+		
+			In right pane "base-package:" --> select the package that holds your bean
+			classes.
+			
+		XML source:
+		
+			<context:component-scan base-package="vid_28"></context:component-scan>
+		
+	RUN PROGRAM. Error! We've not defined which classes in that package are beans!
+	
+	To do: Define which classes are beans using @Component
+	
+	[ ] Vid_28_Logger
+	[ ] Vid_28_FileWriter
+	[ ] Vid_28_ConsoleWriter
+	
+		Add "@Component" above the class declaration.
+		
+	RUN PROGRAM. Error. well, we still have the @Inject with the @Named with values pointing
+	to <bean> IDs that are no longer there :) 
+	
+	[ ] Vid_28_Logger
+	
+		- remove the @Named that points to the <bean> IDs that are no longer there 
+		  (they've been commented out for this video).
+	
+	RUN PROGRAM. John's worked but mine produced an error that said:
+	
+		"No qualifying bean of type [vid_28.Vid_28_LogWriter] is defined: expected single
+		matching bean but found 2: vid_28_ConsoleWriter,vid_28_FileWriter"
+		
+		...this is because Vid_28_Logger has an interface type, LogWriter, for the FileWriter
+		property and Java doesn't know which Class to inject since two classes implement
+		that interface.
+		
+	Fix it: give @Component a tag:
+	
+	[ ] Vid_28_FileWriter
+	
+		@Component("fw vid 31 tag")		// goes above the class' header.
+		
+	Then:
+	
+	[ ] Vid_28_Logger
+	
+		@Inject
+		@Named(value="fw vid 31 tag")
+		public void setFileWriter(Vid_28_LogWriter fileWriter) {
+			this.fileWriter = fileWriter;
+		}
+		
+		
+	RUN PROGRAM. Error! There is no bean named "logger".
+	
+	This took a moment to figure out. John's class is named Logger and his 
+	ApplicationContext getBean uses "logger" as an argument. 
+	
+		...and that worked for me, too, when I had a bean with the ID logger. But now
+		I don't because I commented that out.
+		
+		So what I need to do is supply getBean with the argument "vid_28_Logger"
+		
+			...note the lowercase "v".
+			
+	RUN PROGRAM. It Works!
+	
+		NOTE: alternatively, I could have given the Vid_28_Logger an @Component("logger")
+		tag. Then the ApplicationContext's getBean("logger") would have worked.
+	
+	
+
+VIDEO #32: Setting Property Values via Annotations
+
+	
+	Create new project for this video.
+	
+	1. New Maven Project: Artifact ID: Spring_tut_10, group: spring_tutorial_10
+	2. pom.xml --> dependencies: beans, core, context, javax.inject
+	3. packages: vid_32, vid_32_beans
+	4. classes: Vid_32_Main, Vid_32_Robot
+	
+		Vid_32_Robot 	
+		--------------
+		-id: int
+		-speech: String		
+		+speak(): void		// sysout(id + speech)
+		+setId(int): void
+		+setSpeech(String): void	
+		
+		Vid_32_Main
+		--------------
+		App context = new ClassPathXmlApplicationContext...
+		
+		Robot robot = (Robot)context.getBean("vid_32_Robot")
+		
+		robot.speak();
+		
+		((ClassPathXmlApplicationContext)context).close();		
+	
+	5a. XML Spring Bean Config File: vid_32_beans
+	5b. Namespaces tab, select context.
+	5c. context: insert <context:component-scan> element: choose vid_32 as base-package.
+	5d. (notice: not using "insert<context:annotation-config>"; and neither does John's
+	    source code. And it'll still work. 
+	6. put @Component above Vid_32_Robot class declaration.
+	
+	RUN PROGRAM. It works!
+	
+	Lesson goal: What if we want to supply values for Robot's properties?
+	
+	[ ] Vid_32_Robot
+	
+		Change the set methods to look like:
+		
+			@Inject
+			public void setId(@Value("1969") int id) {
+				this.id = id;
+			}
+
+			@Inject
+			public void setSpeech(@Value("Woodstock, baby!") String speech) {
+				this.speech = speech;
+			}		
+
+	RUN PROGRAM. Works.
+	
+		You can also do: 
+		
+			@Autowired
+			public void setId(@Value("1969") int id) {
+				this.id = id;
+			}
+
+			@Autowired
+			public void setSpeech(@Value("Woodstock, baby!") String speech) {
+				this.speech = speech;
+			}		
+
+	RUN PROGRAM. Works.
+	
+		And you could do:		
+		
+			@Resource
+			public void setId(@Value("1969") int id) {
+				this.id = id;
+			}
+
+			@Resource
+			public void setSpeech(@Value("Woodstock, baby!") String speech) {
+				this.speech = speech;
+			}		
+		
+			...my Eclipse is being funky, had to (again) manually type:
+			
+				import javax.annotation.Resource;
+		
+		
+		
+	RUN PROGRAM. It works!
+	
+		And you could do:
+		
+			@Resource
+			@Value("1969")
+			public void setId( int id) {
+				this.id = id;
+			}
+
+			@Resource
+			@Value("Woodstock, baby!")
+			public void setSpeech( String speech) {
+				this.speech = speech;
+			}	
+
+
+	EXTRA NOTES:
+	
+	Okay. I was interested in how the annotations seemed to be working when the Spring
+	Bean Configuration File didn't have a <context:annotation-config> but only a 
+	<context:component-scan>.
+	
+	I found this WONDERFUL post on StackOverflow about this very thing:
+	
+	http://stackoverflow.com/questions/7414794/difference-between-contextannotation-config
+	-vs-contextcomponent-scan
+	
+		Summary:
+		
+			When we do:
+			
+			ApplicationContext context = 
+			new ClassPathXmlApplicationContext("vid_32_beans/vid_32_beans.xml");
+			
+			We load the <bean> elements found in vid_32_beans.xml.
+			If vid_32_beans.xml has <context:annotation-config> then any annotations on the
+			beans registered in the ApplicationContext will work.
+			
+			If there are no <bean> elements then none will be registered in the 
+			ApplicationContext object.
+			
+			...UNLESS...we have <context:component-scan> in the vid_32_beans.xml. If we 
+			have that then the ApplicationContext object will scan the packages set as 
+			arguments...
+			
+				<context:component-scan base-package="package1, package2" />
+				
+			...and any classes with @Component above the class definition will then be 
+			registered in the ApplicationContext object.
+			
+	On this StackOverflow answer:
+	
+	http://stackoverflow.com/questions/7142622/what-is-the-difference-between-inject
+	-and-autowired-in-spring-framework-which
+	
+		...they suggest Spring uses @Inject the same as @Autowired. 
+	
+
+	Lastly, here is very fantastic blog on the differences/simularities between using
+	the annotations @Inject, @Resource, and @Autowire:
+	
+http://blogs.sourceallies.com/2011/08/spring-injection-with-resource-and-autowired/#more-2350
+	
+	This blogger, David Kessler, suggests these best practices (partial list):
+	
+		1. Give your @Component classes names: @Component("name_for_this_class")
+		2. Use @Resource: @Resource(name="name_for_this_class")
+		3. Use <context:component-scan base-package="package1, package2, etc" /> in the Spring
+		   Bean Configuration File.
+	
+		
+THE END.

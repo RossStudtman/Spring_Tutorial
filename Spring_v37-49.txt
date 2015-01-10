@@ -1,0 +1,1229 @@
+Author: Ross Studtman
+
+Tutorial: John Purcell's "The Java Spring Tutorial: Learn Java's Popular Web Framework"
+John's website: CaveOfProgramming.com
+Notes for video 37 through 49
+
+Video #37: Using Property Files
+Video #38: Implementing a DAO Pattern
+######
+EXTRA: Summary of John's DAO pattern tutorial.
+######
+Video #39: Downloading a Connector .jar
+Video #40: Configuring Connection Pooling with Apache DBCP (Properties + db connection bean)
+Video #41: JDBC Templates (making queries to db easy)
+Video #42: Querying the Database
+Video #43: Database Exceptions
+Video #44: Named Parameters
+Video #45: Update Statements
+Video #46: Getting Placeholder Values From Beans
+Video #47: Adding An Update Method to the Dao
+Video #48: Batch Updates: Perpared Statements
+Video #49: Transactions
+
+Video 37 code: Spring_tut_12
+Video 38 code: Spring_tut_13
+Video 39 code: Spring_tut_13
+Video 40 code: Spring_tut_13
+Video 41 code: Spring_tut_13
+Video 42 code: Spring_tut_13
+Video 43 code: only in notes
+Video 44 code: Spring_tut_13
+Video 45 code: Spring_tut_13
+Video 46 code: Spring_tut_13
+Video 47 code: Spring_tut_13
+
+
+VIDEO #37: Using Property Files
+
+	Eventually our goal will be to store database connection information in a property file.
+	But first let's observe the concept of a property file.
+	
+	Create new project for this video.
+	
+	1. New Maven Project: Artifact ID: Spring_tut_12, group: spring_tutorial_12
+	2. pom.xml --> dependencies: beans, core, context, javax.inject
+	3. packages: vid_37, vid_37_beans
+	4. classes: Vid_37_Main, Vid_37_Robot
+	
+		Vid_37_Robot 	
+		--------------
+		-id: String
+		-speech: String		
+		+speak(): void		// sysout(id + speech)
+		+setId(int): void
+		+setSpeech(String): void	
+		
+		Vid_37_Main
+		--------------
+		ApplicationContext context = 
+			new ClassPathXmlApplicationContext("vid_37_beans/vid_37_beans.xml");
+		
+		Robot robot = (Robot)context.getBean("vid_37_Robot");
+		
+		robot.speak();
+		
+		((ClassPathXmlApplicationContext)context).close();		
+	
+	5a. XML Spring Bean Config File: vid_37_beans
+	5b. Namespaces tab, select context.
+	5c. context: insert <context:component-scan> element: choose vid_37 as base-package.
+	6. put @Component above Vid_37_Robot class declaration.	
+	
+	RUN PROGRAM. Works.
+	
+	
+	Begin Tutorial:
+	
+	Add a "property" package to the project.
+	
+		Add a file named "jdbc.properties" to this package. In the future, this is where we
+		will store database connection information.
+		
+	[ ] jdbc.properties:
+		
+			Add the following:
+			
+				property1 = property file, p1
+				property2 = property file, p2
+			
+			
+	[ ] vid_37_beans.xml
+	
+		context tab, R-click beans, insert<context:property-placeholder> element.
+		
+			This creates a placeholder that can take properties from our property file.
+			
+			"location:" 		--> properties/jdbc.properties
+			
+		XML source:
+		
+			<context:property-placeholder location="properties\jdbc.properties" />
+			
+		Next insert a Vid_37_Robot bean in the xml:
+		
+			<bean id="robot" class="vid_37.Vid_37_Robot">
+				<property name="id" value="1234"></property>
+				<property name="speech" value="I am T1000"></property>
+			</bean>		
+			
+			
+		((Vid_37_Main --> change getBean() argument to "robot"))
+		RUN PROGRAM. Works. --> output: 1234 : I am T1000
+		
+		
+		Now use SPEL:
+		
+			<bean id="robot" class="vid_37.Vid_37_Robot">
+				<property name="id" value="${property1}"></property>
+				<property name="speech" value="${property2}"></property>
+			</bean>
+
+			
+		RUN PROGRAM. Works.
+		
+			Interesting, when John ran his it said "johnwpurcell" for ${user}.
+			This would imply "user" wasn't specific enough because his 'user'
+			argument came from somewhere other than the jdbc.properties file.
+			
+			To fix that he changes the jdbc.properties to be more specific, like so:
+			
+				jdbc.user = root
+				jdbc.password = letmein
+				
+			And changes the xml arguments like so:
+			
+				<bean id="robot" class="vid_37.Vid_37_Robot">
+					<property name="id" value="${jdbc.user}"></property>
+					<property name="speech" value="${jdbc.password}"></property>
+				</bean>
+				
+			Now when John runs the program it gives "root" as the user value, as we 
+			would expect.
+			
+			
+	Doing the same thing with annotations:
+	
+		[ ] vid_37_beans.xml
+		
+			- comment out the "robot" bean.	
+	
+		[ ] Vid_37_Robot
+		
+			@component("robot")
+			
+				- by doing this I can leave Vid_37_Main's getBean argument as "robot"
+				
+			@Inject
+			@Value("${jdbc.property1}")
+			public void setId(String id) {
+				this.id = id;
+			}
+
+			@Inject
+			@Value("${jdbc.property2}")
+			public void setSpeech(String speech) {
+				this.speech = speech;
+			}		
+
+		RUN PROGRAM. Works. output: --> property file, p1 : property file, p2
+			
+
+PREPERATION FOR VIDEO 38
+
+	You won't need the Robot class anymore. And the code in the next tutorials will make
+	the code in video 37 non functional. So I created a new project: Spring_tut_13.
+	
+VIDEO #38: Implementing a DAO Pattern
+
+
+	Goal: Create classes using the DAO design pattern.
+	
+	Goal2: We created the vid_36_db database in video 36, it has an "offers" table in it
+	with these columns:
+		id (auto increment)		name	email	text. 
+		
+	What we want to do is create a Java class for creating objects that can house this 
+	information.
+	
+	Oh. This is cool. John renames his table from "offers" to "offer". I have not as yet
+	used the command prompt to rename a table. So lets do that.
+	
+		Nice tutorial: http://www.techonthenet.com/sql/tables/alter_table.php
+		
+		Open command prompt.
+		Enter: "mysql -u spring -p"		// entering user "spring"
+		Enter: "tutorial"				// entering password "tutorial"
+		Enter: "use vid_36_db;"	
+		Enter: "show tables;" --> see the "offers" table
+		Enter: ALTER TABLE offers RENAME TO offer;
+		Enter: "show tables;" --> see the "offer" table
+		
+		...and that's that. Easy peasy. Cool.
+		
+		Enter: exit		--> Bye		// leaving MySQL
+		Enter: exit		--> commant prompt closes.
+		
+		Ah. John decides not to, for time purposes. Oh well, I'll keep the change because
+		it afforded a learning opportunity.
+		
+		
+	Now create, aka "model", a database table row as a Java class:
+	
+	[ ] Vid_38_Offer --> create in its own package named "models"
+	
+		Vid_38_Offer
+		------------
+		-id: int
+		-name: String
+		-email: String
+		-text: String
+		+setId(int): void
+		+setName(String):void
+		+setEmail(String):void
+		+setText(String):void
+		+getId(): int
+		+getName(): String
+		+getEmail(): String
+		+getText(): String
+		+toString(): String
+		
+		
+	Now create a class for dealing with the database:
+	
+	[ ] Vid_38_OfferDAO --> in the vid_38 package
+		
+		Vid_38_OfferDAO
+		---------------
+		+getOffers(): List<models.Vid_38_Offer>	
+		
+######		
+EXTRA:
+######
+	
+	John mentions looking at his DAO design pattern tutorial:
+	
+	https://www.udemy.com/java-design-patterns-tutorial/?dtcode=M8jYtkw1OiDw#/lecture/249407
+	
+	I thought I'd do that and take a couple of quick notes on it here.
+	
+	He's got:
+	
+	0. A database with a People table. A Person class that can hold all the information
+	pertaining to a person (a row) in the People table. A PersonDAO class that can update
+	the database when given a Person object, or retrieve a Person object when given an id.
+	The Controller class fittingly enough controls the model and the view.
+
+	1. a GUI form that creates user, it has these fields:
+
+		name, password, repeat password.
+		
+		When the form is submitted it creates a row in the database.
+		
+	2. created a "Controller" class
+	
+		Controller <<implements: CreateUserListener>>
+		----------
+		-view: View
+		-model: Model
+		-personDAO: PersonDAO
+		+Controller(View, Model)
+		+userCreated(CreateUserEvent): void // the interface method
+		
+		When GUI form is submitted this class is notified of the event.
+		
+		The Controllers job is to create a Person object.
+		
+			// interface method
+			public void userCreated(CreateUserEvent event){
+			
+				// Assumption: the View has validated the data.
+				personDAO.addPerson(new Person(event.getName(), event.getPassword());
+			}
+		
+		
+	3. A Person class
+	
+		John refers to this class as a "transfer object"; the object will be filled with 
+		data and passed to PersonDAO (which will deal with the database).
+	
+		Person
+		-------------
+		-id: int
+		-name: String
+		-password: String
+		+Person()
+		+Person(name: String, password: String) // id is set to auto increment in db
+		...getters and setters for those.
+	
+	
+		
+	4. A PersonDAO class
+	
+		PersonDAO will have create, retrieve, update, and delete functionality (CRUD).
+		There is typically 1 DAO class per database table (or view).
+		
+		PersonDAO
+		-------------
+		+addPerson(Person): void
+		+getPerson(id: int): Person
+		+getPeople(): List<Person>
+			...John points out that normally you'd have a "find" method to find particular
+			entries in the database; but here he's pulling all the records because his 
+			database is going to be tiny.
+		+updatePerson(Person): void
+		+deletePerson(id: int): void
+		
+			... the SQL code would go inside those methods.
+			So now there is ONE place where the code is written to access the database.
+			If the underlying database should change then only the details inside these
+			methods would have to change; BUT the rest of the program would NOT have to
+			change because the rest of the program will be using these methods; so as 
+			long as the method names don't change then the rest of the program could care
+			less what is inside them.
+			
+		Example of addPerson() method --> simplified code:
+		
+			public void addPerson(Person person){
+			
+				// John created a "Database" class that makes connections with db.
+				Connection connection = Database.getInstance().getConnection();
+				
+				PreparedStatement p = conn.prepareStatement("insert into people(name,
+					password) values (?,?)");
+					
+				p.setString(1, person.getName());
+				p.setString(2, person.getPassword());
+				
+				p.executeUpdate();
+				p.close();
+			
+			}
+		
+#########
+END EXTRA
+#########
+		
+	
+VIDEO #39: Downloading a Connector/J .jar
+
+
+	Need a driver to connect Java with MySQL database.
+	
+	Google: mysql jdbc driver
+	
+	John will use Maven to obtain the .jar file.
+	
+	[ ] pom.xml
+	
+		Dependencies, add "mysql-connector"
+		
+		Select java entry, open, select top .jar file.
+		
+		R-click project, Maven, Update Project.
+		
+	[ ] jdbc.properties
+	
+		Add: 
+		
+		jdbc.driver = com.mysql.jdbc.Driver  // location in Maven Dependencies
+		
+		
+	
+VIDEO #40: Configuring Connection Pooling with Apache DBCP
+
+
+	Google: basicdatascource
+	
+		http://commons.apache.org/proper/commons-
+		dbcp/api-1.2.2/org/apache/commons/dbcp/BasicDataSource.html
+		
+		The BasicDataSource class is an Apache class. It has four fields we are interested
+		in:
+			
+		 driverClassName --> The fully qualified Java class name of the JDBC driver
+							 to be used.
+									
+					 url --> The connection URL to be passed to our JDBC driver 
+							 to establish a connection.
+							 
+				username --> The connection username to be passed to our JDBC driver
+							 to establish a connection.
+							 
+				password --> The connection password to be passed to our JDBC driver 
+							 to establish a connection.
+	
+		
+	[ ] pom.xml
+	
+		Dependency, search for "dbcp", look for "commons-dbcp", select normal looking .jar
+		
+	Update Maven.
+	
+	Look in the Maven dependencies:
+	
+		- commons-dbcp-1.4.jar
+			-org.apache.commons.dbcp
+				- BasicDataSource.class
+				
+	Now set up a bean using the BasicDataSource class.
+	
+	[ ] vid_38_beans.xml
+	
+		beans tab, new bean:
+		
+			id: dataSource
+			Class: org.apache.commons.dbcp.BasicDataSource
+			
+		John: "If you are creating a Spring web project then you won't need to do this 
+		because your application server will provide you with an ability to configure
+		a pool connection data source. But here because we are using a normal, non-web
+		program (for the moment) I need to bring this extra technology to do connection
+		pooling for me. And this will create a pool of mysql connections." 
+		
+		When you ask for a connection it will be taken from the pool and when you are done
+		it will be returned to the pool. You don't need to worry about opening and closing
+		a connection every time you do a query. 
+		
+		Select dataSource bean:
+		
+			"destroy-method:" 		--> close
+			
+			The intent here is when bean is destroyed it will close mysql connections.
+			
+	Resource for "mysql connection url":
+		http://dev.mysql.com/doc/connector-j/en/connector-j-reference-configuration
+		-properties.html
+	
+	
+		Sample connection URL from the above noted source:
+		
+			jdbc:mysql://localhost:3306/sakila?profileSQL=true
+			
+			What you want from that:
+			
+				jdbc:mysql://localhost:3306/vid_36_db
+				
+				
+	[ ] create new jdbc.properties file:
+	
+		This property file will hold the four properties (aka fields) noted above in the
+		Apache BasicDataSource class.
+		
+		I am using the user name and password we developed in video 36:
+		
+			jdbc.username = spring								// db user name
+			jdbc.password = tutorial							// db user password
+			jdbc.driverClassName = com.mysql.jdbc.Driver		// Maven dependeny location
+			jdbc.url = jdbc:mysql://localhost:3306/vid_36_db	// local msql server
+			
+	
+	[ ] vid_38_beans.xml
+	
+		Add properties to the <bean> with id "dataSource." 
+		
+		XML source:
+		
+			<context:property-placeholder location="properties\jdbc.properties" />
+
+			<!-- Vid 40 -->
+			<bean id="dataSource"
+				class="org.apache.commons.dbcp.BasicDataSource"
+				destroy-method="close">
+				<property name="driverClassName" value="${jdbc.driverClassName}"></property>
+				<property name="username" value="${jdbc.username}"></property>
+				<property name="password" value="${jdbc.password}"></property>
+				<property name="url" value="${jdbc.url}"></property>
+			</bean>		
+			
+			...note: the names of the xml properties have to be given names that Spring can
+			use to access the getter/setter methods of class BasicDataSource. However, the
+			names in the ".properties" text file, those I could have named anything I wanted
+			like bear, cat,	monkey and mouse - .property names are only referred to by 
+			"${monkey}" --- but it is nicer to have the names in .properties match the
+			names given to the <property> elements.
+			
+			
+	...we won't know if we've set everything correctly until we run a query. 
+	
+	
+	
+VIDEO #41: JDBC Templates - allows for db queries
+
+
+	What we've got:
+	
+		Our Spring Bean Configuration File, vid_38_beans.xml, has a bean for this class:
+		
+			BasicDataSource
+			
+				Which is located in the Maven Dependencies folder at:
+				
+					org.apache.commons.dbcp.BasicDataSource
+					
+					
+			We have named this <bean> element "dataSource" and we have supplied properties
+			to it via the "${an_entry_in_.properties}" because we have a ".properties"
+			text file with the four BasicDataSource fields we are interested in: url,
+			username, password, driverClassName.
+			
+	
+	Now we need to pass the "dataSource" <bean> to the class Vid_38_OfferDAO.
+	
+	Vid_38_OfferDAO will make queries via the connection pool obtained by the "dataSource"
+	bean.
+	
+	
+		We need another Spring dependency --> spring-jdbc
+	
+	[ ] pom.xml
+	
+		Dependencies tab, search for "springframework", in results find:
+		
+			org.springframework spring-jdbc --> add the .jar file.
+			
+			
+	[ ] Vid_38_OfferDAO
+	
+		Add the following private field to this class:
+		
+			private JdbcTemplate jdbcTemplate;
+		
+				That class is located in the Maven Dependencies folder:			
+				spring-jdbc/org.springframework.jdbc.core.JdbcTemplate
+				
+				
+		The JdbcTemplate class will wrap the DataSource object like so:
+		
+			public void setDataSource(DataSource jdbc){
+			
+				this.jdbcTemplate = new JdbcTemplate(jdbc);
+			}
+			
+			
+			...and you are thinking, this setter method makes it look to Spring like we
+			have a field (property) in Vid_38_OfferDAO named "dataSource". And that is
+			basically correct, we WILL HAVE the "dataSource" object...only, it is
+			tucked inside the JdbcTemplate object. 			
+			
+			...the reason for the wrapping of BasicDataSource with JdbcTemplate is
+			because JdbcTemplate has methods we want to use.
+			
+			...the BasicDataSource class implements the DataSource interface.
+			
+				Documentation for DataSource interface:
+				
+					http://docs.oracle.com/javase/7/docs/api/javax/sql/DataSource.html
+					
+				Documentation for JdbcTemplate class:
+				
+					http://docs.spring.io/spring/docs/current/javadoc-api/org/
+					springframework/jdbc/core/JdbcTemplate.html			
+			
+			...so, we can pass a BasicDataSource object to this setter method.
+			
+			
+		Now add @Component above the Vid_38_OfferDAO class header.
+		
+		And add the following to setDataSource method to inject the "dataSource" bean:
+		
+			@Inject @Named(value="dataSource")
+			public void setDataSource(DataSource jdbc){
+				
+				this.jdbc = new JdbcTemplate(jdbc);
+			}	
+
+
+			...John uses @Autowired. And this works well without a "@Qualifier" because
+			the bean he wants to inject is named "dataSource" and this setter is 
+			named "setDataSource" --> hence, Spring can hook up the bean to this setter.
+			Or, it can (and probably does) use the TYPE of the bean for Autowiring 
+			purposes.
+			
+			
+			
+VIDEO #42: Querying the Database
+
+	
+	What we've done:
+	
+		XML bean: Configured a connection pool in xml (the "dataSource" bean).
+			- Wired that up using .properties file.
+			
+		Passed that bean to OffersDAO. (we injected a bean into a class)
+		
+
+	What we are going to do: hook up the getOffers() method in Vid_38_OfferDAO.
+	
+	Goal: use the JdbcTemplate class' query method. There are many overloaded query methods
+	in this class. Documentation for the one I think John is using is here:
+	
+		http://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/jdbc/core
+		/JdbcTemplate.html#query-java.lang.String-org.springframework.jdbc.core.RowMapper-
+	
+	[ ] Vid_38_OfferDAO
+
+		public List<Vid_38_Offer> getOffers(){
+			
+			return jdbcTemplate.query("select * from offer", new RowMapper<Vid_38_Offer>(){
+
+				public Vid_38_Offer mapRow(ResultSet rs, int rowNum) throws SQLException {
+					
+					Vid_38_Offer offer = new Vid_38_Offer();
+					
+					offer.setId(rs.getInt("id"));
+					offer.setName(rs.getString("name"));
+					offer.setEmail(rs.getString("email"));
+					offer.setText(rs.getString("text"));
+					
+					return offer;
+				}			
+			});
+		}	
+
+	
+		...I had some terrible issues with Eclipse telling me that I could not do a 
+		RowMapper with generics, i.e., RowMapper<Vid_38_Offer>.
+		
+			The issue turned out to be an incorrect import statement:
+		
+				import javax.swing.tree.RowMapper; 
+		
+			I guess a ctrl-shift-o...to ogranize imports...brought that in automatically
+			and screwed with my sanity for about two hours.
+			
+			Btw, the proper import is:
+			
+				import org.springframework.jdbc.core.RowMapper;
+		
+		
+	[ ] Vid_38_Main
+	
+		// some names may not match perfectly; the problem I mention above had me trying
+		all kinds of things.
+	
+		ApplicationContext context = 
+			new ClassPathXmlApplicationContext("vid_38_beans/vid_38_beans.xml");
+		
+		Vid_38_OfferDAO offerDao = (Vid_38_OfferDAO)context.getBean("offerDao");
+		
+		List<Vid_38_Offer> offers = offerDao.getOffers();
+		
+		for(Vid_38_Offer offer : offers){
+			System.out.println(offer);
+		}
+		
+		((ClassPathXmlApplicationContext)context).close();		
+					
+		
+			
+		
+VIDEO #43: SQL Exceptions in Spring
+
+
+	Using try-catch to catch a runtime exception.
+	
+	What we've got in Vid_38_OfferDAO:
+			
+		@Component("offerDao")
+		public class Vid_38_OfferDAO {
+			
+			private JdbcTemplate jdbcTemplate;
+			
+			@Inject 
+			@Named(value="dataSource")
+			public void setDataSource(DataSource jdbc){
+				
+				this.jdbcTemplate = new JdbcTemplate(jdbc);
+			}			
+
+			public List<Vid_38_Offer> getOffers(){
+				
+				return jdbcTemplate.query("select * from offer", new RowMapper<Vid_38_Offer>(){
+
+					public Vid_38_Offer mapRow(ResultSet rs, int rowNum) throws SQLException {
+						
+						Vid_38_Offer offer = new Vid_38_Offer();
+						
+						offer.setId(rs.getInt("id"));
+						offer.setName(rs.getString("name"));
+						offer.setEmail(rs.getString("email"));
+						offer.setText(rs.getString("text"));
+						
+						return offer;
+					}			
+				});
+			}
+		}		
+		
+		
+	If we put an error in the SQL statement, like so:
+	
+		"selec t * from offer"
+		
+		...this will cause program crash with a BadSqlGrammarException.
+		
+		
+	So lets catch that Exception.
+	
+	What we don't want to do: hanlde it in the DAO.
+	
+	What we do want to do: handle it further up, in the Vid_38_Main:
+	
+	public class Vid_38_Main {
+		public static void main(String[] args) {
+			
+			ApplicationContext context = 
+				new ClassPathXmlApplicationContext("vid_38_beans/vid_38_beans.xml");
+			
+			Vid_38_OfferDAO offerDao = (Vid_38_OfferDAO)context.getBean("offerDao");
+			
+			try{
+				List<Vid_38_Offer> offers = offerDao.getOffers();
+				
+				for(Vid_38_Offer offer : offers){
+					System.out.println(offer);
+				}			
+			}catch(DataAccessException ex){
+				sysout(ex.getMessage());
+			}
+
+			
+			((ClassPathXmlApplicationContext)context).close();
+		}
+	}	
+	
+	Resource for DataAccessException:
+	
+	http://docs.spring.io/spring/docs/current/javadoc-api/org/springframework/
+	jdbc/BadSqlGrammarException.html
+
+	Exceptions tutorial explores:
+	
+	DataAccessException -- parent of:
+		NonTransientDataAccessException
+			InvalidDataAcessResourceUsageException
+				BadSqlGrammarException --> when we mess up the SQL string.
+				
+		
+	DataAccessException -- parent of:
+		NonTransientDataAccessException	
+			NonTransientDataAccessResourceException
+				DataAccessResourceFailureException
+					CannotGetJdbcConnectionException --> when our db un or pw is incorrect.
+
+	
+		
+		
+VIDEO #44: Named Parameters
+
+	Goal: How to query database for a single value.
+	
+	Oracle Source for this topic:
+	
+		http://docs.oracle.com/javase/tutorial/jdbc/basics/prepared.html
+	
+	Some background on JDBC and SQL.
+						
+			JDBC Basics: "?" mark as a placeholder:
+			
+				PreparedStatement ps;
+				
+				try{
+				
+					ps = conn.prepareStatement("select * from offers where name = ?");
+					
+	--->			ps.setString(1, "Sue");
+					
+					ps.execute();
+				}
+		
+		
+			JDBC Servlet Basics:
+							
+				<sql:query var="rabbit" dataSource="${bunny }">
+					SELECT id, imageName, image_extension 
+					FROM images
+					WHERE id=?
+	--->			<sql:param>${param.imageID }</sql:param>		
+				</sql:query>				
+		
+
+			Spring Basics:
+			
+				(Changed DAO field type from JdbcTemplate --> NamedParameterJdbcTemplate)
+
+				
+				NamedParameterJdbcTemplate jdbcTemplate;
+				
+				...
+				
+				We could run this sql string: 
+				
+					jdbcTemplate.query("select * from offers where name = 'Sue'", 
+						new RowMapper<Vid_38_offer>(){...});
+					
+					
+				But instead do:
+				
+					"select * from offers where name = :myNameVariable"
+					
+					..."myNameVariable" can be whatever you like.
+					...the ":" has to be there.
+					
+					
+				To supply the values for the variables in the SQL string use
+				this object:
+				
+					MapSqlParamterSource params = new MapSqlParameterSource();
+					
+					If you only need to replace one variable in the sql string then
+					you can do this:
+					
+					
+			MapSqlParamterSource params = new MapSqlParameterSource("myVar", "Sue");
+						
+						
+					Then you add the variable & "param" arguement to the query:
+					
+					jdbcTemplate.query("select * from offers where name = :myVar", 
+	--->				params, new RowMapper<Vid_38_offer>(){...});
+
+
+		If you need to use more than one "placeholder" variable, then do:
+		
+			MapSqlParamterSource params = new MapSqlParameterSource();
+			params.addValue("var1", "value");
+			params.addValue("var2", "value2");
+			etc.
+			
+			For our code:
+			
+			MapSqlParamterSource params = new MapSqlParameterSource();
+			params.addValue("myVar", "Sue");			
+			
+			
+		
+	Next part of tutorial: obtain an Offer object from an ID.
+	
+	[ ] Vid_38_OfferDAO
+	
+		Add this method:
+		
+			public Vid_38_Offer getOffer(int id){
+				
+				MapSqlParameterSource params = new MapSqlParameterSource();
+				params.addValue("id", id);
+							
+				return jdbcTemplate.queryForObject("select * from offer where id= :id",
+					params, new RowMapper<Vid_38_Offer>(){
+
+					public Vid_38_Offer mapRow(ResultSet rs, int rowNum) throws SQLException {
+						
+						Vid_38_Offer offer = new Vid_38_Offer();
+						
+						offer.setId(rs.getInt("id"));
+						offer.setName(rs.getString("name"));
+						offer.setEmail(rs.getString("email"));
+						offer.setText(rs.getString("text"));
+						
+						return offer;
+					}			
+				});
+			}	
+
+
+	[ ] Vid_38_Main:
+	
+		Add this to try block:
+		
+			Vid_38_Offer query2 = offerDao.getOffer(2); // Get second row
+			
+			// output query2 result
+			System.out.println("Query 2 result: " + query2);
+
+
+			
+	
+		
+VIDEO #45: Update Statements
+
+	John starts this video with having already added several rows to his database's 
+	Offer table. Well, I could simply add those entries to the database with the 
+	command prompt. But this lesson	is about updating, which includes inserting. 
+	So why don't we tackle that?
+	
+	
+	Personal Goal: Add data to database. Google: jave spring sql insert -- work from there.
+	
+	What I've done:
+	
+	[ ] Vid_38_OfferDAO
+	
+		public void insert(Vid_38_Offer offer){
+			
+			// I discover this is wrong, below.
+			String sql = "INSERT INTO offer VALUES (?, ?, ?)";
+			
+			MapSqlParameterSource params = new MapSqlParameterSource();
+			params.addValue("name", offer.getName());
+			params.addValue("email", offer.getEmail());
+			params.addValue("text", offer.getText());
+			
+			jdbcTemplate.update(sql, params);
+		}	
+		
+		
+	[ ] Vid_38_Main
+	
+	// Create some Vid_38_Offer objects and pass to DAO's insert method for inserting into the database:
+	offerDao.insert(new Vid_38_Offer("Pete", "pete@someEmail.com", "Awesome code for you!"));
+	offerDao.insert(new Vid_38_Offer("Kate", "kate@someEmail.com", "JavaScript is my thang!"));
+	offerDao.insert(new Vid_38_Offer("Mary", "mary@someEmail.com", "JDBC? I got you!"));
+	offerDao.insert(new Vid_38_Offer("Roger", "roger@someEmail.com", "Oh no, duplicate!"));
+	offerDao.insert(new Vid_38_Offer("Roger", "roger@someEmail.com", "Oh no, duplicate!"));
+	offerDao.insert(new Vid_38_Offer("Ross", "ross@someEmail.com", "Tutorial notes - free!"));		
+		
+
+	Now before I RUN PROGRAM I want to visually see what's in my database:
+	
+	Open command prompt.
+
+	Enter: mysql -u spring -p
+	Enter: tutorial					// password
+	Enter: show databases; 			// shows vid_36_db
+	Enter: use vid_36_db;
+	Enter: show tables; 			// displays the "offer" table
+	Enter: select * from offer;		// shows 3 records: bob, mike, sue
+	
+	
+	Okay. Moment of truth. RUN PROGRAM.
+	
+	Result:
+	
+		SQL [INSERT INTO offer VALUES (?, ?, ?)]: given 3 parameters but expected 0
+		class org.springframework.dao.InvalidDataAccessApiUsageException
+
+	Just to check, at command prompt:
+	Enter: select * from offer;		// shows the same 3 records
+	
+	Okay, now to discover why that error is in there.
+	
+		Ah! My SQL string should use the ":var" syntax, not the ?-mark syntax:
+		
+			String sql = "INSERT INTO offer VALUES (:name, :email, :text)";
+			
+		Feeling confident now!
+		
+	RUN PROGRAM! Error! Drat! Reported error is:
+	
+PreparedStatementCallback; bad SQL grammar [INSERT INTO offer VALUES (?, ?, ?)]; 
+nested exception is java.sql.SQLException: Column count doesn't match value count at row 1
+
+	...hmm. I thought we wouldn't need to supply the auto-incremented ID.
+	
+	Okay, this resource says my memory is faulty, I do need to supply the column names:
+	
+		http://dev.mysql.com/doc/refman/5.6/en/insert.html
+		
+	[ ] Vid_38_OffersDao:
+	
+	Okay, so changed SQL string to:
+	
+		String sql = "INSERT INTO offer (name, email, text) VALUES (:name, :email, :text)";
+		
+	RUN PROGRAM. No errors!
+	
+	Now check command prompt:
+	Enter: select * from offer;		--> 9 entries!
+	
+	
+	Outstanding!
+	
+	This resource is really good:
+	http://docs.spring.io/spring-framework/docs/current/spring-framework-reference/html/jdbc.html
+	
+	
+	
+	OKAY. Now to John's tutorial proper.
+	
+	Update SQL statements in Spring. Implement a DELETE method.
+	
+	
+	[ ] Vid_38_OfferDao
+	
+		public in delete(int id){
+		
+			String sql = "DELETE FROM offer where id = :id";
+			
+			MapSqlParameterSource params = new MapSqlParameterSource();
+			params.addValue("id", id);
+			
+			return jdbcTemplate.update(sql, params)		
+		}
+	
+	
+	[ ] Vid_38_Main
+	
+		// choose a record to delete: I'll delete 8
+		sysout(offersDao.delete(8));
+
+
+
+	If you want to use JDBC style of SQL with the "?" you don't have to use the
+	MapSqlParameterSource, you can do:
+	
+		[ ] Vid_38_OffersDAO
+		
+			jdbcTemplate.getJdbcOperations()
+			
+			...the Javadoc on that:
+			
+			"Expose the classic Spring JdbcTemplate to allow invocation of 
+			less commonly used methods."
+			
+			
+		John doesn't go into this because it is preferable to used named parameters.
+		
+		
+VIDEO #46: Getting Placeholder Values From Beans
+
+	It looks as though I did what is accomplished in this video as my personal learning
+	objective in Video #45. But I'll continue anyway incase John does something different.
+	
+	John uses a BeanPropertySqlParameterSource object to create a set of parameters you
+	can use to replace placeholders in your SQL - taken straight from bean properties.
+	All you have to do is make sure the placeholders have the same name as the properties
+	in the bean.
+
+	[ ] Vid_38_OfferDao
+
+		public boolean create(Vid_38_Offer offer){
+		
+			BeanPropertySqlParameterSource params = 
+				new BeanPropertySqlParameterSource(offer);
+				
+			String sqlVideo46 = "insert into offer (name, text, email) +
+				values (:name, :text, :email)";
+			
+			// Return true if 1 row was updated.
+			return jdbcTemplate.update(sqlVideo46, params) == 1;
+		
+		}
+
+
+	[ ] Vid_38_Offer
+	
+		Create 2 constructors. One will use all the data fields. One will use all of them
+		except ID.
+		
+		
+
+	[ ] Vid_38_Main
+	
+		Vid_38_Offer offer1 = new Vid_38_Offer("Dave", "dave@doggy.com", "C");
+		Vid_38_Offer offer2 = new Vid_38_Offer("Karen", "karen@doggy.com", "D");
+		
+		System.out.println("Inserted record: " +offerDao.create(offer1));
+		System.out.println("Inserted record: " +offerDao.create(offer2));
+		
+		
+
+VIDEO #47: Adding an UPDATE Method to the DAO
+
+
+	[ ] Vid_38_OfferDAO
+	
+		public boolean update(Vid_38_Offer offer){
+			
+			BeanPropertySqlParameterSource params = 
+					new BeanPropertySqlParameterSource(offer);
+			
+			String sqlVideo47 = "UPDATE offer SET name=:name, text=:text, email=:email WHERE id=:id";
+			
+			// Return true if 1 row was updated.
+			return jdbcTemplate.update(sqlVideo47, params) == 1;
+		}	
+
+		
+	[ ] Vid_38_Main
+	
+		John decides to demonstrate the UPDATE functionality by looking at the list
+		of Offer objects printed in the console via a previous run of the program, noting a
+		record that is a duplicate, and note the id and make an update to that record by
+		changing the name on the record. He then creates the Offer object from scratch...
+		
+		...but I'm thinking, you know what, we have a DAO method that will return a single
+		Offer object, why don't I use that, pass in the ID of the record I want, get that
+		record, make any changes I want, then update the database? Sounds good, lets do 
+		that.
+		
+		For me I notice in the console output that ID 13 is a "Karen" duplicate. I'll get
+		that record:
+		
+		
+			Vid_38_Offer recordToUpdate = offerDao.getOffer(13);
+			
+			recordToUpdate.setName("Gandalf The Wise");
+			
+			offerDao.update(recordToUpdate);
+
+
+
+VIDEO #48: Batch Updates: Prepared Statements
+
+	How to add a whole List of Offer objects.
+	
+
+	[ ] Vid_38_OfferDAO
+	
+		public int[] create(List<Vid_38_Offer> offers){
+		
+			String sqlVideo48 = "insert into offer (name, text, email)" +
+			" values (:name, :text, :email)";
+		
+			SqlParameterSource[] batchValues = 
+				SqlParameterSourceUtils.createBatch(offers.toArray());
+		
+			return jdbcTemplate.batchUpdate(sqlVideo48, batchValues);		
+		}
+	
+
+	[ ] Vid_38_Main
+	
+		List<Vid_38_Offer> offerList = new ArrayList<Vid_38_Offer>();
+		
+		offerList.add(new Vid_38_Offer("He-Man", "boyToy@cartoon.com", "Friendly code");
+		offerList.add(new Vid_38_Offer("Skeletor", "hPhobic@cartoon.com", "Unfriendly code");
+		
+		int[] results = offerDao.create(offerList);
+		
+		for(int x : results){
+			System.out.println("Return from batch update: " +x);
+		}
+
+
+	RUN PROGRAM. Works!
+	
+		Note: of course if you want to get at the underlying jdbcTemplate and use a more
+		traditional JDBC sql approach (with the "?" and whatnot) you can use this to
+		get at that:
+		
+			jdbcTemplate.getJdbcOperations().batch....
+	
+	
+VIDEO #49: Transactions
+
+	John notes that this is a big subject. He's going to show a simple way to do it so the
+	topic gets introduced.
+	
+	The idea behind a transaction is to run a group of SQL statements; and either the
+	whole group of statements succeed -- or if there is a single failure then the database
+	is not changed at all. This functionality is useful for things like a bank update where
+	either all of the changes take place or the underlying data isn't changed at all.
+	
+	Add a transaction manager bean:
+	
+	[ ] Vid_38_beans.xml
+	
+		Even if you like the source view of the XML do this in the beans tab because
+		you can type "DataSourceTr" and hit browse and be supplied with this string:
+		
+			"org.springframework.jdbc.datasource.DataSourceTransactionManager"
+			
+		...best to let the ID get that ;)
+		
+		Add a <property> that refers to the dataSource bean. 
+		
+		Source XML:
+		
+		
+		<bean id="transactionManager"
+			class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+			<property name="dataSource" ref="dataSource" ></property>
+		</bean>		
+		
+		
+		Now, Namespaces tab, check the "tx" checkbox.
+		
+		Now, tx tab, R-click beans, Insert <tx:annotation-driven> element.
+		
+		Source XML added:
+		
+			<tx:annotation-driven />
+			
+			
+	GOAL: make it so if any of the update statements in the batch code of the previous video
+	fails then none of them go through.	
+	
+	To make this work simply do:
+		
+	[ ] Vid_38_OfferDAO
+	
+	-->	@Transactional
+		public int[] create(List<Vid_38_Offer> offers){
+			
+			String sqlVideo48 = "insert into offer (name, text, email)" +
+			" values (:name, :text, :email)";
+		
+			SqlParameterSource[] batchValues = 
+				SqlParameterSourceUtils.createBatch(offers.toArray());
+		
+			return jdbcTemplate.batchUpdate(sqlVideo48, batchValues);		
+		}		
+
+		...with the @Transactional annotation any failure in the whole batch will
+		cause the whole batch to fail. That is, either the whole batch works or the 
+		whole things fails. NO partial updates!
+		
+Whew.
+FINISHED!
+
+
+
+
+
+		
+	
+		
+	
